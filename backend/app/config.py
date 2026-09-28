@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     notion_trades_database_id: str = "6f74e22a-4a2b-412e-bc6b-8f242782fc58"
     # Trading journal sync is paused for now. Only the to do list is pulled.
     notion_sync_trades: bool = False
+    # How often the API pulls from Notion by itself. 0 turns it off.
+    notion_sync_interval_minutes: int = 5
     notion_webhook_secret: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

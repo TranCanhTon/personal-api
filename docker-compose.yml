@@ -25,6 +25,7 @@ services:
       INGEST_API_KEY: ${INGEST_API_KEY}
       NOTION_TOKEN: ${NOTION_TOKEN}
       NOTION_WEBHOOK_SECRET: ${NOTION_WEBHOOK_SECRET:-}
+      NOTION_SYNC_INTERVAL_MINUTES: ${NOTION_SYNC_INTERVAL_MINUTES:-5}
     restart: unless-stopped
     depends_on:
       db:

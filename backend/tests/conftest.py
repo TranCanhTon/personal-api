@@ -13,6 +13,7 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["INGEST_API_KEY"] = "test-key"
 os.environ["NOTION_TOKEN"] = "test-notion-token"
 os.environ["NOTION_WEBHOOK_SECRET"] = "test-webhook-secret"
+os.environ["NOTION_SYNC_INTERVAL_MINUTES"] = "0"
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402
