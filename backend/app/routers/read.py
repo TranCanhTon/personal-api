@@ -1,0 +1,78 @@
+from datetime import date, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app import schemas
+from app.database import get_db
+from app.models import SyncLog
+from app.services import read
+
+router = APIRouter(tags=["read"])
+
+MAX_RANGE_DAYS = 366
+
+
+def date_window(
+    start: date | None = Query(None, description="First day, YYYY-MM-DD. Defaults to 6 days before end."),
+    end: date | None = Query(None, description="Last day, YYYY-MM-DD. Defaults to today."),
+) -> tuple[date, date]:
+    end = end or date.today()
+    start = start or end - timedelta(days=6)
+    if start > end:
+        raise HTTPException(422, "start must be on or before end")
+    if (end - start).days + 1 > MAX_RANGE_DAYS:
+        raise HTTPException(422, f"Range can be at most {MAX_RANGE_DAYS} days")
+    return start, end
+
+
+@router.get("/days/{day}", response_model=schemas.Day, tags=["days"])
+def get_day(day: date, db: Session = Depends(get_db)):
+    """Everything for one day."""
+    return read.build_days(db, day, day)[0]
+
+
+@router.get("/days", response_model=list[schemas.Day], tags=["days"])
+def get_days(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+    """Everything for each day in a range. Days with no data are still included."""
+    return read.build_days(db, *window)
+
+
+@router.get("/fitness", response_model=list[schemas.FitnessDay], tags=["fitness"])
+def get_fitness(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+    data = read.fitness_by_day(db, *window)
+    return [schemas.FitnessDay(date=d, **f.model_dump()) for d, f in data.items()]
+
+
+@router.get("/sleep", response_model=list[schemas.SleepDay], tags=["sleep"])
+def get_sleep(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+    """Only nights that have data."""
+    data = read.sleep_by_day(db, *window)
+    return [schemas.SleepDay(date=d, **s.model_dump()) for d, s in sorted(data.items())]
+
+
+@router.get("/todos", response_model=list[schemas.TodoDayOut], tags=["todo"])
+def get_todos(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+    data = read.todos_by_day(db, *window)
+    return [schemas.TodoDayOut(date=d, **t.model_dump()) for d, t in data.items()]
+
+
+@router.get("/trades", response_model=schemas.Trading, tags=["hobby"])
+def get_trades(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+    """All journal entries in the range, plus a summary."""
+    trades = read.trades_between(db, *window)
+    return schemas.Trading(
+        trades=[schemas.TradeOut.model_validate(t) for t in trades],
+        summary=read.summarize_trades(trades),
+    )
+
+
+@router.get("/sync/status", response_model=list[schemas.SyncStatus], tags=["system"])
+def sync_status(db: Session = Depends(get_db)):
+    """The latest sync for each source."""
+    latest = (
+        select(SyncLog.source, func.max(SyncLog.id).label("id")).group_by(SyncLog.source).subquery()
+    )
+    rows = db.scalars(select(SyncLog).join(latest, SyncLog.id == latest.c.id).order_by(SyncLog.source))
+    return [schemas.SyncStatus.model_validate(r, from_attributes=True) for r in rows]
