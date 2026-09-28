@@ -1,0 +1,557 @@
+{
+  "info": {
+    "name": "Personal API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run top to bottom. Set the apiKey variable to INGEST_API_KEY from your .env."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "apiKey",
+      "value": "paste_your_INGEST_API_KEY"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. System",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sync/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sync",
+                "status"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Send data",
+      "item": [
+        {
+          "name": "Send Apple Health sample",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingest/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingest",
+                "health"
+              ]
+            },
+            "description": "A fake day (27.09.2026) in the same shape Health Auto Export sends.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"metrics\": [\n      {\n        \"name\": \"step_count\",\n        \"units\": \"count\",\n        \"data\": [\n          {\n            \"qty\": 8000,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          },\n          {\n            \"qty\": 3200,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"active_energy\",\n        \"units\": \"kJ\",\n        \"data\": [\n          {\n            \"qty\": 4184,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"basal_energy_burned\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 1800,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"dietary_energy\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 2450,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"protein\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 180,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"carbohydrates\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 250,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"total_fat\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 70,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27 00:00:00 +0300\",\n            \"Min\": 50,\n            \"Avg\": 70,\n            \"Max\": 150\n          },\n          {\n            \"date\": \"2026-09-27 12:00:00 +0300\",\n            \"Min\": 55,\n            \"Avg\": 74,\n            \"Max\": 165\n          }\n        ]\n      },\n      {\n        \"name\": \"resting_heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"qty\": 58,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"sleep_analysis\",\n        \"units\": \"hr\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27\",\n            \"totalSleep\": 7.5,\n            \"asleep\": 7.5,\n            \"core\": 4.0,\n            \"deep\": 1.5,\n            \"rem\": 2.0,\n            \"awake\": 0.25,\n            \"sleepStart\": \"2026-09-27 00:30:00 +0300\",\n            \"sleepEnd\": \"2026-09-27 08:15:00 +0300\"\n          },\n          {\n            \"value\": \"Core\",\n            \"sleepStart\": \"2026-09-27 01:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"blood_oxygen_saturation\",\n        \"units\": \"%\",\n        \"data\": [\n          {\n            \"qty\": 98,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      }\n    ],\n    \"workouts\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Traditional Strength Training\",\n        \"start\": \"2026-09-27 18:00:00 +0300\",\n        \"end\": \"2026-09-27 19:05:00 +0300\",\n        \"duration\": 3900,\n        \"activeEnergyBurned\": {\n          \"qty\": 420,\n          \"units\": \"kcal\"\n        },\n        \"avgHeartRate\": {\n          \"qty\": 128,\n          \"units\": \"bpm\"\n        },\n        \"maxHeartRate\": {\n          \"qty\": 162,\n          \"units\": \"bpm\"\n        }\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send again, no duplicates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingest/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingest",
+                "health"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"metrics\": [\n      {\n        \"name\": \"step_count\",\n        \"units\": \"count\",\n        \"data\": [\n          {\n            \"qty\": 8000,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          },\n          {\n            \"qty\": 3200,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"active_energy\",\n        \"units\": \"kJ\",\n        \"data\": [\n          {\n            \"qty\": 4184,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"basal_energy_burned\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 1800,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"dietary_energy\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 2450,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"protein\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 180,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"carbohydrates\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 250,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"total_fat\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 70,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27 00:00:00 +0300\",\n            \"Min\": 50,\n            \"Avg\": 70,\n            \"Max\": 150\n          },\n          {\n            \"date\": \"2026-09-27 12:00:00 +0300\",\n            \"Min\": 55,\n            \"Avg\": 74,\n            \"Max\": 165\n          }\n        ]\n      },\n      {\n        \"name\": \"resting_heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"qty\": 58,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"sleep_analysis\",\n        \"units\": \"hr\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27\",\n            \"totalSleep\": 7.5,\n            \"asleep\": 7.5,\n            \"core\": 4.0,\n            \"deep\": 1.5,\n            \"rem\": 2.0,\n            \"awake\": 0.25,\n            \"sleepStart\": \"2026-09-27 00:30:00 +0300\",\n            \"sleepEnd\": \"2026-09-27 08:15:00 +0300\"\n          },\n          {\n            \"value\": \"Core\",\n            \"sleepStart\": \"2026-09-27 01:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"blood_oxygen_saturation\",\n        \"units\": \"%\",\n        \"data\": [\n          {\n            \"qty\": 98,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      }\n    ],\n    \"workouts\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Traditional Strength Training\",\n        \"start\": \"2026-09-27 18:00:00 +0300\",\n        \"end\": \"2026-09-27 19:05:00 +0300\",\n        \"duration\": 3900,\n        \"activeEnergyBurned\": {\n          \"qty\": 420,\n          \"units\": \"kcal\"\n        },\n        \"avgHeartRate\": {\n          \"qty\": 128,\n          \"units\": \"bpm\"\n        },\n        \"maxHeartRate\": {\n          \"qty\": 162,\n          \"units\": \"bpm\"\n        }\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync Notion now",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingest/notion/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingest",
+                "notion",
+                "sync"
+              ]
+            },
+            "description": "Needs NOTION_TOKEN in .env and your pages connected to the integration."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No API key, should fail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingest/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingest",
+                "health"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"metrics\": [\n      {\n        \"name\": \"step_count\",\n        \"units\": \"count\",\n        \"data\": [\n          {\n            \"qty\": 8000,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          },\n          {\n            \"qty\": 3200,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"active_energy\",\n        \"units\": \"kJ\",\n        \"data\": [\n          {\n            \"qty\": 4184,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"basal_energy_burned\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 1800,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"dietary_energy\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 2450,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"protein\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 180,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"carbohydrates\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 250,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"total_fat\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 70,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27 00:00:00 +0300\",\n            \"Min\": 50,\n            \"Avg\": 70,\n            \"Max\": 150\n          },\n          {\n            \"date\": \"2026-09-27 12:00:00 +0300\",\n            \"Min\": 55,\n            \"Avg\": 74,\n            \"Max\": 165\n          }\n        ]\n      },\n      {\n        \"name\": \"resting_heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"qty\": 58,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"sleep_analysis\",\n        \"units\": \"hr\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27\",\n            \"totalSleep\": 7.5,\n            \"asleep\": 7.5,\n            \"core\": 4.0,\n            \"deep\": 1.5,\n            \"rem\": 2.0,\n            \"awake\": 0.25,\n            \"sleepStart\": \"2026-09-27 00:30:00 +0300\",\n            \"sleepEnd\": \"2026-09-27 08:15:00 +0300\"\n          },\n          {\n            \"value\": \"Core\",\n            \"sleepStart\": \"2026-09-27 01:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"blood_oxygen_saturation\",\n        \"units\": \"%\",\n        \"data\": [\n          {\n            \"qty\": 98,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      }\n    ],\n    \"workouts\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Traditional Strength Training\",\n        \"start\": \"2026-09-27 18:00:00 +0300\",\n        \"end\": \"2026-09-27 19:05:00 +0300\",\n        \"duration\": 3900,\n        \"activeEnergyBurned\": {\n          \"qty\": 420,\n          \"units\": \"kcal\"\n        },\n        \"avgHeartRate\": {\n          \"qty\": 128,\n          \"units\": \"bpm\"\n        },\n        \"maxHeartRate\": {\n          \"qty\": 162,\n          \"units\": \"bpm\"\n        }\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Wrong API key, should fail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "wrong"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingest/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingest",
+                "health"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"metrics\": [\n      {\n        \"name\": \"step_count\",\n        \"units\": \"count\",\n        \"data\": [\n          {\n            \"qty\": 8000,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          },\n          {\n            \"qty\": 3200,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"active_energy\",\n        \"units\": \"kJ\",\n        \"data\": [\n          {\n            \"qty\": 4184,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"basal_energy_burned\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 1800,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"dietary_energy\",\n        \"units\": \"kcal\",\n        \"data\": [\n          {\n            \"qty\": 2450,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"protein\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 180,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"carbohydrates\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 250,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"total_fat\",\n        \"units\": \"g\",\n        \"data\": [\n          {\n            \"qty\": 70,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27 00:00:00 +0300\",\n            \"Min\": 50,\n            \"Avg\": 70,\n            \"Max\": 150\n          },\n          {\n            \"date\": \"2026-09-27 12:00:00 +0300\",\n            \"Min\": 55,\n            \"Avg\": 74,\n            \"Max\": 165\n          }\n        ]\n      },\n      {\n        \"name\": \"resting_heart_rate\",\n        \"units\": \"bpm\",\n        \"data\": [\n          {\n            \"qty\": 58,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"sleep_analysis\",\n        \"units\": \"hr\",\n        \"data\": [\n          {\n            \"date\": \"2026-09-27\",\n            \"totalSleep\": 7.5,\n            \"asleep\": 7.5,\n            \"core\": 4.0,\n            \"deep\": 1.5,\n            \"rem\": 2.0,\n            \"awake\": 0.25,\n            \"sleepStart\": \"2026-09-27 00:30:00 +0300\",\n            \"sleepEnd\": \"2026-09-27 08:15:00 +0300\"\n          },\n          {\n            \"value\": \"Core\",\n            \"sleepStart\": \"2026-09-27 01:00:00 +0300\"\n          }\n        ]\n      },\n      {\n        \"name\": \"blood_oxygen_saturation\",\n        \"units\": \"%\",\n        \"data\": [\n          {\n            \"qty\": 98,\n            \"date\": \"2026-09-27 00:00:00 +0300\"\n          }\n        ]\n      }\n    ],\n    \"workouts\": [\n      {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Traditional Strength Training\",\n        \"start\": \"2026-09-27 18:00:00 +0300\",\n        \"end\": \"2026-09-27 19:05:00 +0300\",\n        \"duration\": 3900,\n        \"activeEnergyBurned\": {\n          \"qty\": 420,\n          \"units\": \"kcal\"\n        },\n        \"avgHeartRate\": {\n          \"qty\": 128,\n          \"units\": \"bpm\"\n        },\n        \"maxHeartRate\": {\n          \"qty\": 162,\n          \"units\": \"bpm\"\n        }\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Read data",
+      "item": [
+        {
+          "name": "One day",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/days/2026-09-27",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "days",
+                "2026-09-27"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Last 7 days",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/days",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "days"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fitness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fitness?start=2026-09-21&end=2026-09-28",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fitness"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-09-21"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-09-28"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sleep",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sleep?start=2026-09-21&end=2026-09-28",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sleep"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-09-21"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-09-28"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/todos?start=2026-09-21&end=2026-09-28",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "todos"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-09-21"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-09-28"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trades",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trades?start=2026-09-01&end=2026-09-28",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trades"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-09-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-09-28"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bad range, should fail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/days?start=2026-09-28&end=2026-09-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "days"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-09-28"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-09-01"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
