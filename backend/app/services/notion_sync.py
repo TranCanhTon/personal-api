@@ -163,8 +163,15 @@ def sync_trades(db: Session, notion: NotionSource, trades_database_id: str, resu
     result.trades_deleted = removed.rowcount or 0
 
 
-def sync_notion(db: Session, notion: NotionSource, todo_page_id: str, trades_database_id: str) -> NotionSyncResult:
+def sync_notion(
+    db: Session,
+    notion: NotionSource,
+    todo_page_id: str,
+    trades_database_id: str,
+    include_trades: bool = False,
+) -> NotionSyncResult:
     result = NotionSyncResult()
     sync_todos(db, notion, todo_page_id, result)
-    sync_trades(db, notion, trades_database_id, result)
+    if include_trades:
+        sync_trades(db, notion, trades_database_id, result)
     return result

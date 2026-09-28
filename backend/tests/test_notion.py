@@ -74,6 +74,7 @@ def fake_notion(monkeypatch):
     fake = FakeNotion()
     monkeypatch.setattr(notion_runner, "NotionClient", lambda token: fake)
     monkeypatch.setattr(notion_runner.settings, "notion_trades_database_id", "trades-db")
+    monkeypatch.setattr(notion_runner.settings, "notion_sync_trades", True)
     return fake
 
 
@@ -89,6 +90,13 @@ def fake_notion(monkeypatch):
 def test_date_from_title(title, expected):
     result = date_from_title(title)
     assert (result.isoformat() if result else None) == expected
+
+
+def test_trades_are_skipped_by_default(client, fake_notion, monkeypatch):
+    monkeypatch.setattr(notion_runner.settings, "notion_sync_trades", False)
+    body = client.post("/ingest/notion/sync", headers=AUTH).json()
+    assert body["todos"] == 3
+    assert body["trades"] == 0
 
 
 def test_sync_requires_key(client, fake_notion):

@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     notion_token: str = ""
     notion_todo_page_id: str = "2c53780f-eac3-80d9-b84e-da60d1faea41"
     notion_trades_database_id: str = "6f74e22a-4a2b-412e-bc6b-8f242782fc58"
+    # Trading journal sync is paused for now. Only the to do list is pulled.
+    notion_sync_trades: bool = False
     notion_webhook_secret: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

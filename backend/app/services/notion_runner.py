@@ -20,7 +20,11 @@ def run_notion_sync(db: Session) -> NotionSyncResult:
     try:
         with sync_run(db, "notion") as log:
             result = sync_notion(
-                db, client, settings.notion_todo_page_id, settings.notion_trades_database_id
+                db,
+                client,
+                settings.notion_todo_page_id,
+                settings.notion_trades_database_id,
+                include_trades=settings.notion_sync_trades,
             )
             log.records = result.records
         return result
