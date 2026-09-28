@@ -1,0 +1,13 @@
+# Local development only. Docker Compose loads this file automatically.
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  backend:
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

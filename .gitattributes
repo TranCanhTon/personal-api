@@ -1,0 +1,2 @@
+# Keep Linux line endings so shell and Docker files work when cloned on Windows
+* text=auto eol=lf
