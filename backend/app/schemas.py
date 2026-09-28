@@ -95,13 +95,10 @@ class TradeOut(ORM):
 
 
 class TradingSummary(BaseModel):
-    entries: int = 0
-    profit: int = 0
-    loss: int = 0
+    wins: int = 0
+    losses: int = 0
     breakeven: int = 0
-    no_trade: int = 0
-    total_rr: float = 0
-    rules_followed: int = 0
+    win_rate: float | None = None  # percent, wins / (wins + losses). None when there are no wins or losses
 
 
 class Trading(BaseModel):

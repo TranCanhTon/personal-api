@@ -112,14 +112,28 @@ def test_sync_imports_todos_and_trades(client, fake_notion):
 
     trading = client.get("/trades", params={"start": "2026-09-26", "end": "2026-09-27"}).json()
     summary = trading["summary"]
-    assert summary == {
-        "entries": 2, "profit": 1, "loss": 1, "breakeven": 0,
-        "no_trade": 1, "total_rr": 1.5, "rules_followed": 1,
-    }
+    assert summary == {"wins": 1, "losses": 1, "breakeven": 0, "win_rate": 50.0}
     first = trading["trades"][0]
     assert first["followed_rules"] is True
     assert first["time_of_entry"] == "16:45"
     assert first["note"] == "Swept the low"
+
+
+def test_trades_default_to_all_time(client, fake_notion):
+    fake_notion.rows["trades-db"] += [
+        trade_page("r4", "2025-01-10", "Profit", 3),
+        trade_page("r5", "2025-01-11", "Profit", 2),
+        trade_page("r6", "2025-01-12", "BE", 0),
+    ]
+    client.post("/ingest/notion/sync", headers=AUTH)
+
+    summary = client.get("/trades").json()["summary"]
+    # 3 wins, 1 loss. Breakeven and no trade days do not count toward win rate
+    assert summary == {"wins": 3, "losses": 1, "breakeven": 1, "win_rate": 75.0}
+
+
+def test_win_rate_is_empty_without_trades(client):
+    assert client.get("/trades").json()["summary"]["win_rate"] is None
 
 
 def test_sync_removes_deleted_pages(client, fake_notion):

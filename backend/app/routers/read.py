@@ -59,9 +59,15 @@ def get_todos(window: tuple[date, date] = Depends(date_window), db: Session = De
 
 
 @router.get("/trades", response_model=schemas.Trading, tags=["hobby"])
-def get_trades(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
-    """All journal entries in the range, plus a summary."""
-    trades = read.trades_between(db, *window)
+def get_trades(
+    start: date | None = Query(None, description="First day, YYYY-MM-DD. Leave out for all time."),
+    end: date | None = Query(None, description="Last day, YYYY-MM-DD. Leave out for all time."),
+    db: Session = Depends(get_db),
+):
+    """Journal entries plus wins, losses and win rate. All time unless a range is given."""
+    if start and end and start > end:
+        raise HTTPException(422, "start must be on or before end")
+    trades = read.trades_between(db, start, end)
     return schemas.Trading(
         trades=[schemas.TradeOut.model_validate(t) for t in trades],
         summary=read.summarize_trades(trades),

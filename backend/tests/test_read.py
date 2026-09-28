@@ -8,7 +8,7 @@ def test_empty_day_has_full_shape(client):
     assert day["fitness"]["workouts"] == []
     assert day["sleep"] is None
     assert day["todo"] == {"tasks": [], "done": 0, "total": 0}
-    assert day["hobby"]["trading"]["summary"]["entries"] == 0
+    assert day["hobby"]["trading"]["summary"]["win_rate"] is None
 
 
 def test_default_range_is_last_7_days(client):

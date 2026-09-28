@@ -73,20 +73,24 @@ def todos_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Todo
 
 
 def summarize_trades(trades: list[Trade]) -> schemas.TradingSummary:
-    real = [t for t in trades if t.result != "No trade"]
+    wins = sum(t.result == "Profit" for t in trades)
+    losses = sum(t.result == "Loss" for t in trades)
+    decided = wins + losses
     return schemas.TradingSummary(
-        entries=len(real),
-        profit=sum(t.result == "Profit" for t in trades),
-        loss=sum(t.result == "Loss" for t in trades),
+        wins=wins,
+        losses=losses,
         breakeven=sum(t.result == "BE" for t in trades),
-        no_trade=sum(t.result == "No trade" for t in trades),
-        total_rr=round(sum(t.actual_rr or 0 for t in real), 2),
-        rules_followed=sum(bool(t.followed_rules) for t in real),
+        win_rate=round(wins / decided * 100, 1) if decided else None,
     )
 
 
-def trades_between(db: Session, start: date, end: date) -> list[Trade]:
-    return list(db.scalars(select(Trade).where(_between(Trade.date, start, end)).order_by(Trade.date, Trade.id)))
+def trades_between(db: Session, start: date | None, end: date | None) -> list[Trade]:
+    query = select(Trade)
+    if start:
+        query = query.where(Trade.date >= start)
+    if end:
+        query = query.where(Trade.date <= end)
+    return list(db.scalars(query.order_by(Trade.date, Trade.id)))
 
 
 def trading_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Trading]:

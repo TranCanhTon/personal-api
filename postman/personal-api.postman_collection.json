@@ -476,27 +476,17 @@
           ]
         },
         {
-          "name": "Trades",
+          "name": "Trades, all time win rate",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/trades?start=2026-09-01&end=2026-09-28",
+              "raw": "{{baseUrl}}/trades",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "trades"
-              ],
-              "query": [
-                {
-                  "key": "start",
-                  "value": "2026-09-01"
-                },
-                {
-                  "key": "end",
-                  "value": "2026-09-28"
-                }
               ]
             },
             "description": ""
