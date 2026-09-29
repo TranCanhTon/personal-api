@@ -28,3 +28,31 @@ def test_reads_are_public_and_writes_are_not(client):
     assert client.get("/fitness").status_code == 200
     assert client.get("/sleep").status_code == 200
     assert client.post("/ingest/health", json={}).status_code == 401
+
+
+def test_todos_default_to_today(client):
+    from app.routers.read import today
+
+    days = client.get("/todos").json()
+    assert [d["date"] for d in days] == [today().isoformat()]
+
+
+def test_todos_single_day_and_range(client):
+    one = client.get("/todos", params={"date": "2026-09-29"}).json()
+    assert [d["date"] for d in one] == ["2026-09-29"]
+    week = client.get("/todos", params={"start": "2026-09-22", "end": "2026-09-28"}).json()
+    assert len(week) == 7
+
+
+def test_todos_param_validation(client):
+    assert client.get("/todos", params={"date": "2026-09-29", "start": "2026-09-29"}).status_code == 422
+    assert client.get("/todos", params={"start": "2026-09-29"}).status_code == 422
+    assert client.get("/todos", params={"start": "2026-09-29", "end": "2026-09-01"}).status_code == 422
+
+
+def test_fitness_defaults_to_today(client):
+    from app.routers.read import today
+
+    assert [d["date"] for d in client.get("/fitness").json()] == [today().isoformat()]
+    assert [d["date"] for d in client.get("/fitness", params={"date": "2026-09-28"}).json()] == ["2026-09-28"]
+    assert len(client.get("/fitness", params={"start": "2026-09-22", "end": "2026-09-28"}).json()) == 7

@@ -35,9 +35,9 @@ Notion ──webhook /webhooks/notion (or POST /ingest/notion/sync)────�
 |---|---|---|
 | GET | `/days/{date}` | Everything for one day |
 | GET | `/days?start=&end=` | Everything per day in a range (default last 7 days) |
-| GET | `/fitness?start=&end=` | Fitness per day |
+| GET | `/fitness?date=` or `/fitness?start=&end=` | Fitness per day, today by default |
 | GET | `/sleep?start=&end=` | Nights with sleep data |
-| GET | `/todos?start=&end=` | Tasks per day |
+| GET | `/todos?date=` or `/todos?start=&end=` | Tasks per day, today by default |
 | GET | `/trades?start=&end=` | Journal entries and a summary |
 | GET | `/sync/status` | Latest sync per source |
 | GET | `/health` | API and database status |
