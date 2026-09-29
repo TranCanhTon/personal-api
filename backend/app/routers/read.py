@@ -1,10 +1,12 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import schemas
+from app.config import settings
 from app.database import get_db
 from app.models import SyncLog
 from app.services import read
@@ -27,6 +29,27 @@ def date_window(
     return start, end
 
 
+def today() -> date:
+    """Today in the configured timezone, not the server's. AWS servers run on UTC."""
+    return datetime.now(ZoneInfo(settings.timezone)).date()
+
+
+def day_or_window(
+    day: date | None = Query(None, alias="date", description="One day, YYYY-MM-DD. Defaults to today."),
+    start: date | None = Query(None, description="First day of a range, YYYY-MM-DD. Use with end."),
+    end: date | None = Query(None, description="Last day of a range, YYYY-MM-DD. Use with start."),
+) -> tuple[date, date]:
+    """Today by default. Pass date for one day, or start and end for a range."""
+    if day and (start or end):
+        raise HTTPException(422, "Use either date or start and end, not both")
+    if start or end:
+        if not (start and end):
+            raise HTTPException(422, "start and end must be given together")
+        return date_window(start, end)
+    d = day or today()
+    return d, d
+
+
 @router.get("/days/{day}", response_model=schemas.Day, tags=["days"])
 def get_day(day: date, db: Session = Depends(get_db)):
     """Everything for one day."""
@@ -40,7 +63,8 @@ def get_days(window: tuple[date, date] = Depends(date_window), db: Session = Dep
 
 
 @router.get("/fitness", response_model=list[schemas.FitnessDay], tags=["fitness"])
-def get_fitness(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+def get_fitness(window: tuple[date, date] = Depends(day_or_window), db: Session = Depends(get_db)):
+    """Today by default. Pass date for one day, or start and end for a range."""
     data = read.fitness_by_day(db, *window)
     return [schemas.FitnessDay(date=d, **f.model_dump()) for d, f in data.items()]
 
@@ -53,7 +77,8 @@ def get_sleep(window: tuple[date, date] = Depends(date_window), db: Session = De
 
 
 @router.get("/todos", response_model=list[schemas.TodoDayOut], tags=["todo"])
-def get_todos(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+def get_todos(window: tuple[date, date] = Depends(day_or_window), db: Session = Depends(get_db)):
+    """Today by default. Pass date for one day, or start and end for a range."""
     data = read.todos_by_day(db, *window)
     return [schemas.TodoDayOut(date=d, **t.model_dump()) for d, t in data.items()]
 
