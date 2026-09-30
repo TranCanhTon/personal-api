@@ -15,11 +15,18 @@ class Macros(BaseModel):
     fat_g: float | None = None
 
 
+class HeartRateInterval(BaseModel):
+    start: dt.datetime
+    min: float | None = None
+    max: float | None = None
+
+
 class HeartRate(ORM):
     resting: float | None = None
     avg: float | None = None
     min: float | None = None
     max: float | None = None
+    intervals: list[HeartRateInterval] = []  # every hour of the day that has readings
 
 
 class Exercise(ORM):
@@ -59,16 +66,11 @@ class Fitness(BaseModel):
 
 # ---------- sleep ----------
 
-class SleepHeartRateInterval(BaseModel):
-    start: dt.datetime
-    min: float | None = None
-    max: float | None = None
-
 
 class SleepHeartRate(BaseModel):
     min: float | None = None
     max: float | None = None
-    intervals: list[SleepHeartRateInterval] = []  # every 30 minutes of the night that has readings
+    intervals: list[HeartRateInterval] = []  # every 30 minutes of the night that has readings
 
 
 class SleepOut(ORM):

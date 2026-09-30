@@ -87,7 +87,12 @@ def test_imports_everything(client, db):
     assert fit["calories_out"] == 2800
     assert fit["calories_in"] == 2450
     assert fit["macros"] == {"protein_g": 180, "carbs_g": 250, "fat_g": 70}
-    assert fit["heart_rate"] == {"resting": 58, "avg": 72, "min": 50, "max": 165}
+    hr = fit["heart_rate"]
+    assert {k: hr[k] for k in ("resting", "avg", "min", "max")} == {"resting": 58, "avg": 72, "min": 50, "max": 165}
+    assert [(i["start"], i["min"], i["max"]) for i in hr["intervals"]] == [
+        ("2026-09-27T00:00:00+03:00", 50, 150),
+        ("2026-09-27T12:00:00+03:00", 55, 165),
+    ]
 
     workout = fit["workouts"][0]
     assert workout["type"] == "Traditional Strength Training"
@@ -192,6 +197,27 @@ def test_sleep_heart_rate_per_half_hour(client):
         datetime(2026, 9, 29, 6, 30, tzinfo=tz),
     ]
     assert [(i["min"], i["max"]) for i in intervals] == [(55, 66), (47, 52), (55, 71)]
+
+
+def test_day_heart_rate_per_hour(client):
+    payload = {"data": {"metrics": [{"name": "heart_rate", "units": "bpm", "data": [
+        {"date": "2026-09-29 00:10:00 +0300", "Min": 60, "Avg": 65, "Max": 70},
+        {"date": "2026-09-29 00:40:00 +0300", "Min": 55, "Avg": 60, "Max": 65},  # same hour as 00:10
+        {"date": "2026-09-29 13:05:00 +0300", "Min": 90, "Avg": 120, "Max": 150},
+        {"date": "2026-09-30 00:05:00 +0300", "Min": 50, "Avg": 55, "Max": 60},  # next day
+    ]}]}}
+    client.post("/ingest/health", json=payload, headers=AUTH)
+
+    tz = timezone(timedelta(hours=3))
+    intervals = client.get("/days/2026-09-29").json()["fitness"]["heart_rate"]["intervals"]
+    assert [datetime.fromisoformat(i["start"]) for i in intervals] == [
+        datetime(2026, 9, 29, 0, 0, tzinfo=tz),
+        datetime(2026, 9, 29, 13, 0, tzinfo=tz),
+    ]
+    assert [(i["min"], i["max"]) for i in intervals] == [(55, 70), (90, 150)]
+
+    next_day = client.get("/days/2026-09-30").json()["fitness"]["heart_rate"]["intervals"]
+    assert [(i["min"], i["max"]) for i in next_day] == [(50, 60)]
 
 
 def test_sleep_heart_rate_works_when_sent_separately(client):

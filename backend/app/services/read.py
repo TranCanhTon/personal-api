@@ -1,12 +1,14 @@
 """Builds the JSON the website reads, one day at a time, from all tables."""
 
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app import schemas
+from app.config import settings
 from app.models import DailyFitness, HeartRateDaily, HeartRateSample, Sleep, Todo, Trade, Workout
 
 
@@ -39,6 +41,14 @@ def workout_out(w: Workout, hr_min: float | None) -> schemas.WorkoutOut:
     return out
 
 
+def _day_heart_rate(hr: HeartRateDaily | None, intervals: list[schemas.HeartRateInterval]) -> schemas.HeartRate | None:
+    if hr is None and not intervals:
+        return None
+    out = schemas.HeartRate.model_validate(hr) if hr else schemas.HeartRate()
+    out.intervals = intervals
+    return out
+
+
 def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fitness]:
     daily = {r.date: r for r in db.scalars(select(DailyFitness).where(_between(DailyFitness.date, start, end)))}
     hearts = {r.date: r for r in db.scalars(select(HeartRateDaily).where(_between(HeartRateDaily.date, start, end)))}
@@ -51,6 +61,7 @@ def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fi
     ):
         workouts[w.date].append(w)
     workout_mins = workout_min_heart_rate(db, start, end)
+    hr_intervals = day_heart_rate_intervals(db, start, end)
 
     out = {}
     for day in date_range(start, end):
@@ -67,19 +78,15 @@ def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fi
                 carbs_g=d.carbs_g if d else None,
                 fat_g=d.fat_g if d else None,
             ),
-            heart_rate=schemas.HeartRate.model_validate(hr) if hr else None,
+            heart_rate=_day_heart_rate(hr, hr_intervals.get(day, [])),
             workouts=[workout_out(w, workout_mins.get(w.id)) for w in workouts[day]],
         )
     return out
 
 
-SLEEP_HR_INTERVAL_SECONDS = 30 * 60
-
-
-def _interval_start(ts: datetime) -> datetime:
-    """Start of the clock half hour the sample falls in: 05:23 -> 05:00, 05:41 -> 05:30."""
-    epoch = ts.timestamp()
-    return datetime.fromtimestamp(epoch - epoch % SLEEP_HR_INTERVAL_SECONDS, tz=ts.tzinfo)
+def _interval_start(ts: datetime, minutes: int) -> datetime:
+    """Start of the clock interval the sample falls in, e.g. half hours: 05:23 -> 05:00, 05:41 -> 05:30."""
+    return ts.replace(minute=ts.minute - ts.minute % minutes, second=0, microsecond=0)
 
 
 def _lowest(values: list[float | None]) -> float | None:
@@ -90,6 +97,35 @@ def _lowest(values: list[float | None]) -> float | None:
 def _highest(values: list[float | None]) -> float | None:
     present = [v for v in values if v is not None]
     return max(present) if present else None
+
+
+def _heart_rate_intervals(rows, minutes: int) -> dict[date, list[schemas.HeartRateInterval]]:
+    """(day, ts, min, max) rows, sorted by time -> lowest and highest per clock interval, per day."""
+    days: dict[date, dict[datetime, tuple[list, list]]] = defaultdict(dict)
+    for day, ts, lo, hi in rows:
+        lows, highs = days[day].setdefault(_interval_start(ts, minutes), ([], []))
+        lows.append(lo)
+        highs.append(hi)
+    return {
+        day: [
+            schemas.HeartRateInterval(start=slot, min=_lowest(lows), max=_highest(highs))
+            for slot, (lows, highs) in slots.items()
+        ]
+        for day, slots in days.items()
+    }
+
+
+def day_heart_rate_intervals(db: Session, start: date, end: date) -> dict[date, list[schemas.HeartRateInterval]]:
+    """Lowest and highest heart rate per hour, for each day in the configured timezone."""
+    tz = ZoneInfo(settings.timezone)
+    rows = db.execute(
+        select(HeartRateSample.ts, HeartRateSample.min, HeartRateSample.max)
+        .where(HeartRateSample.ts >= datetime.combine(start, time.min, tz))
+        .where(HeartRateSample.ts < datetime.combine(end + timedelta(days=1), time.min, tz))
+        .order_by(HeartRateSample.ts)
+    )
+    local = ((ts.astimezone(tz).date(), ts.astimezone(tz), lo, hi) for ts, lo, hi in rows)
+    return _heart_rate_intervals(local, 60)
 
 
 def sleep_heart_rate(db: Session, start: date, end: date) -> dict[date, schemas.SleepHeartRate]:
@@ -103,19 +139,8 @@ def sleep_heart_rate(db: Session, start: date, end: date) -> dict[date, schemas.
         .where(_between(Sleep.date, start, end))
         .order_by(Sleep.date, HeartRateSample.ts)
     )
-    # night -> half hour -> (lows, highs)
-    nights: dict[date, dict[datetime, tuple[list, list]]] = defaultdict(dict)
-    for day, ts, lo, hi in rows:
-        lows, highs = nights[day].setdefault(_interval_start(ts), ([], []))
-        lows.append(lo)
-        highs.append(hi)
-
     out = {}
-    for day, slots in nights.items():
-        intervals = [
-            schemas.SleepHeartRateInterval(start=slot, min=_lowest(lows), max=_highest(highs))
-            for slot, (lows, highs) in slots.items()
-        ]
+    for day, intervals in _heart_rate_intervals(rows, 30).items():
         out[day] = schemas.SleepHeartRate(
             min=_lowest([i.min for i in intervals]),
             max=_highest([i.max for i in intervals]),
