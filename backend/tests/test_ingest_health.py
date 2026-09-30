@@ -92,7 +92,8 @@ def test_imports_everything(client, db):
     assert workout["type"] == "Traditional Strength Training"
     assert workout["duration_min"] == 65
     assert workout["calories"] == 420
-    assert workout["avg_heart_rate"] == 128
+    # 150 and 165 fall outside 18:00 to 19:05, so there is no min from samples
+    assert workout["heart_rate"] == {"min": None, "avg": 128, "max": 162}
 
     sleep = day["sleep"]
     assert sleep["total_min"] == 450
@@ -187,3 +188,31 @@ def test_day_aggregated_heart_rate_is_not_used_for_sleep(client):
     day = client.get("/days/2026-09-29").json()
     assert day["sleep"]["heart_rate"] is None
     assert day["fitness"]["heart_rate"]["max"] == 170
+
+
+def test_workout_heart_rate_min_comes_from_samples_inside_the_workout(client):
+    payload = {"data": {
+        "metrics": [{"name": "heart_rate", "units": "bpm", "data": [
+            {"date": "2026-09-30 17:50:00 +0300", "Min": 60, "Avg": 65, "Max": 70},  # before
+            {"date": "2026-09-30 18:05:00 +0300", "Min": 92, "Avg": 110, "Max": 130},
+            {"date": "2026-09-30 18:40:00 +0300", "Min": 84, "Avg": 120, "Max": 158},
+            {"date": "2026-09-30 19:20:00 +0300", "Min": 70, "Avg": 75, "Max": 80},  # after
+        ]}],
+        "workouts": [{
+            "id": "w-1", "name": "Traditional Strength Training",
+            "start": "2026-09-30 18:00:00 +0300", "end": "2026-09-30 19:00:00 +0300", "duration": 3600,
+            "avgHeartRate": {"qty": 118, "units": "bpm"}, "maxHeartRate": {"qty": 158, "units": "bpm"},
+        }],
+    }}
+    assert client.post("/ingest/health", json=payload, headers=AUTH).status_code == 200
+    workout = client.get("/days/2026-09-30").json()["fitness"]["workouts"][0]
+    assert workout["heart_rate"] == {"min": 84, "avg": 118, "max": 158}
+
+
+def test_workout_without_any_heart_rate(client):
+    payload = {"data": {"workouts": [{
+        "id": "w-2", "name": "Walking",
+        "start": "2026-09-30 10:00:00 +0300", "end": "2026-09-30 10:30:00 +0300", "duration": 1800,
+    }]}}
+    client.post("/ingest/health", json=payload, headers=AUTH)
+    assert client.get("/days/2026-09-30").json()["fitness"]["workouts"][0]["heart_rate"] is None

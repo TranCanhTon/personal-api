@@ -18,6 +18,27 @@ def _between(column, start: date, end: date):
     return column.between(start, end)
 
 
+def workout_min_heart_rate(db: Session, start: date, end: date) -> dict[int, float]:
+    """Lowest heart rate between start and end of each workout, by workout id."""
+    rows = db.execute(
+        select(Workout.id, func.min(HeartRateSample.min))
+        .join(
+            HeartRateSample,
+            (HeartRateSample.ts >= Workout.start_time) & (HeartRateSample.ts <= Workout.end_time),
+        )
+        .where(_between(Workout.date, start, end))
+        .group_by(Workout.id)
+    )
+    return {workout_id: lo for workout_id, lo in rows if lo is not None}
+
+
+def workout_out(w: Workout, hr_min: float | None) -> schemas.WorkoutOut:
+    out = schemas.WorkoutOut.model_validate(w)
+    if hr_min is not None or w.avg_heart_rate is not None or w.max_heart_rate is not None:
+        out.heart_rate = schemas.WorkoutHeartRate(min=hr_min, avg=w.avg_heart_rate, max=w.max_heart_rate)
+    return out
+
+
 def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fitness]:
     daily = {r.date: r for r in db.scalars(select(DailyFitness).where(_between(DailyFitness.date, start, end)))}
     hearts = {r.date: r for r in db.scalars(select(HeartRateDaily).where(_between(HeartRateDaily.date, start, end)))}
@@ -29,6 +50,7 @@ def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fi
         .order_by(Workout.start_time)
     ):
         workouts[w.date].append(w)
+    workout_mins = workout_min_heart_rate(db, start, end)
 
     out = {}
     for day in date_range(start, end):
@@ -46,7 +68,7 @@ def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fi
                 fat_g=d.fat_g if d else None,
             ),
             heart_rate=schemas.HeartRate.model_validate(hr) if hr else None,
-            workouts=[schemas.WorkoutOut.model_validate(w) for w in workouts[day]],
+            workouts=[workout_out(w, workout_mins.get(w.id)) for w in workouts[day]],
         )
     return out
 

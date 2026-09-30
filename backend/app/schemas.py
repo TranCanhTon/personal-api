@@ -29,6 +29,12 @@ class Exercise(ORM):
     weight_kg: float | None = None
 
 
+class WorkoutHeartRate(BaseModel):
+    min: float | None = None
+    avg: float | None = None
+    max: float | None = None
+
+
 class WorkoutOut(ORM):
     id: int
     type: str
@@ -36,8 +42,7 @@ class WorkoutOut(ORM):
     end_time: dt.datetime
     duration_min: float
     calories: float | None = None
-    avg_heart_rate: float | None = None
-    max_heart_rate: float | None = None
+    heart_rate: WorkoutHeartRate | None = None  # min from per minute samples, avg and max from the workout
     exercises: list[Exercise] = []
 
 
