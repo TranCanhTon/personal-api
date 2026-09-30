@@ -32,6 +32,7 @@ def ingest_health(payload: dict = Body(...), db: Session = Depends(get_db)):
         "status": "ok",
         "days_fitness": result.days_fitness,
         "days_heart_rate": result.days_heart_rate,
+        "heart_rate_samples": result.heart_rate_samples,
         "nights_sleep": result.nights_sleep,
         "workouts": result.workouts,
         "skipped_sleep_entries": result.skipped_sleep_entries,

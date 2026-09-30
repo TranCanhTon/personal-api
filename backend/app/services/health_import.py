@@ -3,8 +3,11 @@
 Expected shape (Health Auto Export, JSON, REST API automation):
     {"data": {"metrics": [...], "workouts": [...]}}
 
-Set the automation's aggregation to "Day". Daily totals then overwrite the
-stored value for that day, so sending the same day twice is safe.
+Set the automation's aggregation to "Minutes". Values are rolled up into daily
+totals that overwrite the stored value for that day, so sending the same day
+twice is safe. Heart rate is also kept per minute so it can be read for the
+sleep window. With "Day" aggregation everything still works except sleep
+heart rate, because one value per day can't be split into night and day.
 """
 
 from collections import defaultdict
@@ -15,7 +18,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models import DailyFitness, HeartRateDaily, Sleep, Workout
+from app.models import DailyFitness, HeartRateDaily, HeartRateSample, Sleep, Workout
 from app.services.db_utils import upsert
 
 KJ_PER_KCAL = 4.184
@@ -37,6 +40,7 @@ ENERGY_COLUMNS = {"active_calories", "basal_calories", "calories_in"}
 class ImportResult:
     days_fitness: int = 0
     days_heart_rate: int = 0
+    heart_rate_samples: int = 0
     nights_sleep: int = 0
     workouts: int = 0
     ignored_metrics: list[str] = field(default_factory=list)
@@ -88,6 +92,7 @@ def import_health_payload(db: Session, payload: dict) -> ImportResult:
     hr_avg: dict[date, list[float]] = defaultdict(list)
     hr_max: dict[date, list[float]] = defaultdict(list)
     hr_resting: dict[date, list[float]] = defaultdict(list)
+    hr_samples: dict[datetime, dict[str, float]] = {}
 
     for metric in data.get("metrics", []):
         name = metric.get("name")
@@ -111,6 +116,9 @@ def import_health_payload(db: Session, payload: dict) -> ImportResult:
                 for key, bucket in (("Min", hr_min), ("Avg", hr_avg), ("Max", hr_max)):
                     if entry.get(key) is not None:
                         bucket[day].append(float(entry[key]))
+                sample = {k.lower(): float(entry[k]) for k in ("Min", "Avg", "Max") if entry.get(k) is not None}
+                if sample:
+                    hr_samples[parse_ts(entry["date"])] = sample
 
         elif name == "resting_heart_rate":
             for entry in entries:
@@ -160,6 +168,13 @@ def import_health_payload(db: Session, payload: dict) -> ImportResult:
             row["resting"] = round(mean(hr_resting[day]), 1)
         upsert(db, HeartRateDaily, row, key=["date"])
     result.days_heart_rate = len(hr_days)
+
+    # One entry per day means "Day" aggregation. Those can't be placed inside a
+    # sleep window (a whole day's max would land at midnight), so skip them.
+    if len(hr_samples) > len({ts.date() for ts in hr_samples}):
+        for ts, sample in hr_samples.items():
+            upsert(db, HeartRateSample, {"ts": ts, **sample}, key=["ts"])
+        result.heart_rate_samples = len(hr_samples)
 
     for w in data.get("workouts", []):
         start = parse_ts(w["start"])

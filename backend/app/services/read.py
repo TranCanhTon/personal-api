@@ -3,11 +3,11 @@
 from collections import defaultdict
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app import schemas
-from app.models import DailyFitness, HeartRateDaily, Sleep, Todo, Trade, Workout
+from app.models import DailyFitness, HeartRateDaily, HeartRateSample, Sleep, Todo, Trade, Workout
 
 
 def date_range(start: date, end: date) -> list[date]:
@@ -51,11 +51,28 @@ def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fi
     return out
 
 
+def sleep_heart_rate(db: Session, start: date, end: date) -> dict[date, schemas.SleepHeartRate]:
+    """Lowest and highest heart rate between bedtime and wake time, per night."""
+    rows = db.execute(
+        select(Sleep.date, func.min(HeartRateSample.min), func.max(HeartRateSample.max))
+        .join(
+            HeartRateSample,
+            (HeartRateSample.ts >= Sleep.bedtime) & (HeartRateSample.ts < Sleep.wake_time),
+        )
+        .where(_between(Sleep.date, start, end))
+        .group_by(Sleep.date)
+    )
+    return {day: schemas.SleepHeartRate(min=lo, max=hi) for day, lo, hi in rows}
+
+
 def sleep_by_day(db: Session, start: date, end: date) -> dict[date, schemas.SleepOut]:
-    return {
-        r.date: schemas.SleepOut.model_validate(r)
-        for r in db.scalars(select(Sleep).where(_between(Sleep.date, start, end)))
-    }
+    hearts = sleep_heart_rate(db, start, end)
+    out = {}
+    for r in db.scalars(select(Sleep).where(_between(Sleep.date, start, end))):
+        night = schemas.SleepOut.model_validate(r)
+        night.heart_rate = hearts.get(r.date)
+        out[r.date] = night
+    return out
 
 
 def todos_by_day(db: Session, start: date, end: date) -> dict[date, schemas.TodoDay]:

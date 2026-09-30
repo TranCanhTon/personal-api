@@ -25,7 +25,7 @@ Notion ──webhook /webhooks/notion (or POST /ingest/notion/sync)────�
 | Category | Data | Source |
 |---|---|---|
 | Fitness | Calories in and out, macros, steps, heart rate, workouts | Apple Health |
-| Sleep | Sleep stages and duration | Apple Health |
+| Sleep | Sleep stages, duration, heart rate while asleep (min, max) | Apple Health |
 | To Do | Daily task lists | Notion |
 | Hobby | Trading journal (Trade Recap) | Notion |
 

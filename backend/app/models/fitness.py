@@ -43,6 +43,20 @@ class HeartRateDaily(Base):
     )
 
 
+class HeartRateSample(Base):
+    """Heart rate per time bucket as exported (one per minute with Minutes aggregation).
+
+    Kept so heart rate can be read for any window, like a night of sleep.
+    """
+
+    __tablename__ = "heart_rate_samples"
+
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    min: Mapped[float | None] = mapped_column(Float)
+    avg: Mapped[float | None] = mapped_column(Float)
+    max: Mapped[float | None] = mapped_column(Float)
+
+
 class Workout(Base):
     """A workout session recorded by the Apple Watch."""
 

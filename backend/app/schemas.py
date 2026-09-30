@@ -54,6 +54,11 @@ class Fitness(BaseModel):
 
 # ---------- sleep ----------
 
+class SleepHeartRate(BaseModel):
+    min: float | None = None
+    max: float | None = None
+
+
 class SleepOut(ORM):
     bedtime: dt.datetime | None = None
     wake_time: dt.datetime | None = None
@@ -62,6 +67,7 @@ class SleepOut(ORM):
     rem_min: float | None = None
     core_min: float | None = None
     awake_min: float | None = None
+    heart_rate: SleepHeartRate | None = None  # between bedtime and wake time
 
 
 # ---------- to do ----------

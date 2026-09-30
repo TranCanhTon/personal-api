@@ -138,3 +138,52 @@ def test_bad_payload_is_logged_and_raw_kept(client, db):
     assert "KeyError" in log.error
     # Nothing half imported
     assert client.get("/days/2026-09-27").json()["fitness"]["steps"] is None
+
+
+def _sleep_night(hr_entries):
+    return {"data": {"metrics": [
+        {"name": "heart_rate", "units": "bpm", "data": hr_entries},
+        {"name": "sleep_analysis", "units": "hr", "data": [{
+            "date": "2026-09-29", "totalSleep": 7.0, "deep": 1.0, "rem": 1.5, "core": 4.5, "awake": 0.2,
+            "sleepStart": "2026-09-28 23:30:00 +0300", "sleepEnd": "2026-09-29 07:00:00 +0300",
+        }]},
+    ]}}
+
+
+def test_sleep_heart_rate_uses_only_the_sleep_window(client):
+    payload = _sleep_night([
+        {"date": "2026-09-28 22:10:00 +0300", "Min": 70, "Avg": 80, "Max": 120},  # before bed
+        {"date": "2026-09-28 23:45:00 +0300", "Min": 58, "Avg": 60, "Max": 66},
+        {"date": "2026-09-29 03:20:00 +0300", "Min": 47, "Avg": 49, "Max": 52},
+        {"date": "2026-09-29 06:40:00 +0300", "Min": 55, "Avg": 62, "Max": 71},
+        {"date": "2026-09-29 08:30:00 +0300", "Min": 90, "Avg": 110, "Max": 140},  # after waking
+    ])
+    res = client.post("/ingest/health", json=payload, headers=AUTH)
+    assert res.status_code == 200, res.text
+    assert res.json()["heart_rate_samples"] == 5
+
+    sleep = client.get("/days/2026-09-29").json()["sleep"]
+    assert sleep["heart_rate"] == {"min": 47, "max": 71}
+    assert client.get("/sleep", params={"date": "2026-09-29"}).json()[0]["heart_rate"] == {"min": 47, "max": 71}
+
+
+def test_sleep_heart_rate_works_when_sent_separately(client):
+    night = _sleep_night([])
+    client.post("/ingest/health", json=night, headers=AUTH)
+    assert client.get("/days/2026-09-29").json()["sleep"]["heart_rate"] is None
+
+    hr_only = {"data": {"metrics": [{"name": "heart_rate", "units": "bpm", "data": [
+        {"date": "2026-09-29 02:00:00 +0300", "Min": 50, "Avg": 52, "Max": 55},
+        {"date": "2026-09-29 04:00:00 +0300", "Min": 48, "Avg": 51, "Max": 60},
+    ]}]}}
+    client.post("/ingest/health", json=hr_only, headers=AUTH)
+    assert client.get("/days/2026-09-29").json()["sleep"]["heart_rate"] == {"min": 48, "max": 60}
+
+
+def test_day_aggregated_heart_rate_is_not_used_for_sleep(client):
+    payload = _sleep_night([{"date": "2026-09-29 00:00:00 +0300", "Min": 45, "Avg": 70, "Max": 170}])
+    body = client.post("/ingest/health", json=payload, headers=AUTH).json()
+    assert body["heart_rate_samples"] == 0
+    day = client.get("/days/2026-09-29").json()
+    assert day["sleep"]["heart_rate"] is None
+    assert day["fitness"]["heart_rate"]["max"] == 170
