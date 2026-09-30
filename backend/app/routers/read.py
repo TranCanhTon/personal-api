@@ -57,7 +57,7 @@ def get_day(day: date, db: Session = Depends(get_db)):
 
 
 @router.get("/days", response_model=list[schemas.Day], tags=["days"])
-def get_days(window: tuple[date, date] = Depends(day_or_window), db: Session = Depends(get_db)):
+def get_days(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
     """Everything for each day in a range. Days with no data are still included."""
     return read.build_days(db, *window)
 
