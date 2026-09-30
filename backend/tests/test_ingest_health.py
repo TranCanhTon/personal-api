@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select
 
@@ -141,6 +142,10 @@ def test_bad_payload_is_logged_and_raw_kept(client, db):
     assert client.get("/days/2026-09-27").json()["fitness"]["steps"] is None
 
 
+def _low_high(heart_rate):
+    return heart_rate["min"], heart_rate["max"]
+
+
 def _sleep_night(hr_entries):
     return {"data": {"metrics": [
         {"name": "heart_rate", "units": "bpm", "data": hr_entries},
@@ -164,8 +169,29 @@ def test_sleep_heart_rate_uses_only_the_sleep_window(client):
     assert res.json()["heart_rate_samples"] == 5
 
     sleep = client.get("/days/2026-09-29").json()["sleep"]
-    assert sleep["heart_rate"] == {"min": 47, "max": 71}
-    assert client.get("/sleep", params={"date": "2026-09-29"}).json()[0]["heart_rate"] == {"min": 47, "max": 71}
+    assert _low_high(sleep["heart_rate"]) == (47, 71)
+    assert _low_high(client.get("/sleep", params={"date": "2026-09-29"}).json()[0]["heart_rate"]) == (47, 71)
+
+
+def test_sleep_heart_rate_per_half_hour(client):
+    payload = _sleep_night([
+        {"date": "2026-09-28 22:10:00 +0300", "Min": 70, "Avg": 80, "Max": 120},  # before bed
+        {"date": "2026-09-28 23:35:00 +0300", "Min": 58, "Avg": 60, "Max": 66},
+        {"date": "2026-09-28 23:50:00 +0300", "Min": 55, "Avg": 58, "Max": 62},  # same half hour as 23:35
+        {"date": "2026-09-29 03:20:00 +0300", "Min": 47, "Avg": 49, "Max": 52},
+        {"date": "2026-09-29 06:40:00 +0300", "Min": 55, "Avg": 62, "Max": 71},
+        {"date": "2026-09-29 08:30:00 +0300", "Min": 90, "Avg": 110, "Max": 140},  # after waking
+    ])
+    client.post("/ingest/health", json=payload, headers=AUTH)
+
+    intervals = client.get("/days/2026-09-29").json()["sleep"]["heart_rate"]["intervals"]
+    tz = timezone(timedelta(hours=3))
+    assert [datetime.fromisoformat(i["start"]) for i in intervals] == [
+        datetime(2026, 9, 28, 23, 30, tzinfo=tz),
+        datetime(2026, 9, 29, 3, 0, tzinfo=tz),
+        datetime(2026, 9, 29, 6, 30, tzinfo=tz),
+    ]
+    assert [(i["min"], i["max"]) for i in intervals] == [(55, 66), (47, 52), (55, 71)]
 
 
 def test_sleep_heart_rate_works_when_sent_separately(client):
@@ -178,7 +204,7 @@ def test_sleep_heart_rate_works_when_sent_separately(client):
         {"date": "2026-09-29 04:00:00 +0300", "Min": 48, "Avg": 51, "Max": 60},
     ]}]}}
     client.post("/ingest/health", json=hr_only, headers=AUTH)
-    assert client.get("/days/2026-09-29").json()["sleep"]["heart_rate"] == {"min": 48, "max": 60}
+    assert _low_high(client.get("/days/2026-09-29").json()["sleep"]["heart_rate"]) == (48, 60)
 
 
 def test_day_aggregated_heart_rate_is_not_used_for_sleep(client):

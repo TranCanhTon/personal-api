@@ -59,9 +59,16 @@ class Fitness(BaseModel):
 
 # ---------- sleep ----------
 
+class SleepHeartRateInterval(BaseModel):
+    start: dt.datetime
+    min: float | None = None
+    max: float | None = None
+
+
 class SleepHeartRate(BaseModel):
     min: float | None = None
     max: float | None = None
+    intervals: list[SleepHeartRateInterval] = []  # every 30 minutes of the night that has readings
 
 
 class SleepOut(ORM):

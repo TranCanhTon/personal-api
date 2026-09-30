@@ -1,7 +1,7 @@
 """Builds the JSON the website reads, one day at a time, from all tables."""
 
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -73,18 +73,55 @@ def fitness_by_day(db: Session, start: date, end: date) -> dict[date, schemas.Fi
     return out
 
 
+SLEEP_HR_INTERVAL_SECONDS = 30 * 60
+
+
+def _interval_start(ts: datetime) -> datetime:
+    """Start of the clock half hour the sample falls in: 05:23 -> 05:00, 05:41 -> 05:30."""
+    epoch = ts.timestamp()
+    return datetime.fromtimestamp(epoch - epoch % SLEEP_HR_INTERVAL_SECONDS, tz=ts.tzinfo)
+
+
+def _lowest(values: list[float | None]) -> float | None:
+    present = [v for v in values if v is not None]
+    return min(present) if present else None
+
+
+def _highest(values: list[float | None]) -> float | None:
+    present = [v for v in values if v is not None]
+    return max(present) if present else None
+
+
 def sleep_heart_rate(db: Session, start: date, end: date) -> dict[date, schemas.SleepHeartRate]:
-    """Lowest and highest heart rate between bedtime and wake time, per night."""
+    """Lowest and highest heart rate between bedtime and wake time, per night and per half hour."""
     rows = db.execute(
-        select(Sleep.date, func.min(HeartRateSample.min), func.max(HeartRateSample.max))
+        select(Sleep.date, HeartRateSample.ts, HeartRateSample.min, HeartRateSample.max)
         .join(
             HeartRateSample,
             (HeartRateSample.ts >= Sleep.bedtime) & (HeartRateSample.ts < Sleep.wake_time),
         )
         .where(_between(Sleep.date, start, end))
-        .group_by(Sleep.date)
+        .order_by(Sleep.date, HeartRateSample.ts)
     )
-    return {day: schemas.SleepHeartRate(min=lo, max=hi) for day, lo, hi in rows}
+    # night -> half hour -> (lows, highs)
+    nights: dict[date, dict[datetime, tuple[list, list]]] = defaultdict(dict)
+    for day, ts, lo, hi in rows:
+        lows, highs = nights[day].setdefault(_interval_start(ts), ([], []))
+        lows.append(lo)
+        highs.append(hi)
+
+    out = {}
+    for day, slots in nights.items():
+        intervals = [
+            schemas.SleepHeartRateInterval(start=slot, min=_lowest(lows), max=_highest(highs))
+            for slot, (lows, highs) in slots.items()
+        ]
+        out[day] = schemas.SleepHeartRate(
+            min=_lowest([i.min for i in intervals]),
+            max=_highest([i.max for i in intervals]),
+            intervals=intervals,
+        )
+    return out
 
 
 def sleep_by_day(db: Session, start: date, end: date) -> dict[date, schemas.SleepOut]:
