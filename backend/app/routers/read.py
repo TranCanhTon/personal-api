@@ -70,7 +70,7 @@ def get_fitness(window: tuple[date, date] = Depends(day_or_window), db: Session 
 
 
 @router.get("/sleep", response_model=list[schemas.SleepDay], tags=["sleep"])
-def get_sleep(window: tuple[date, date] = Depends(date_window), db: Session = Depends(get_db)):
+def get_sleep(window: tuple[date, date] = Depends(day_or_window), db: Session = Depends(get_db)):
     """Only nights that have data."""
     data = read.sleep_by_day(db, *window)
     return [schemas.SleepDay(date=d, **s.model_dump()) for d, s in sorted(data.items())]
