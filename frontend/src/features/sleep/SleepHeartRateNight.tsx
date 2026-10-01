@@ -3,6 +3,7 @@ import type { Sleep } from '../../api/client'
 import { ChartCard } from '../../components/ChartCard'
 import { EChart } from '../../components/EChart'
 import { Readout } from '../../components/Readout'
+import { fade, glow } from '../../lib/chartKit'
 import { NOT_LOGGED, time24, withUnit } from '../../lib/format'
 import { useTheme } from '../../lib/theme'
 
@@ -81,7 +82,7 @@ export function SleepHeartRateNight({ sleep }: { sleep: Sleep | null }) {
           stack: 'range',
           barWidth: 8,
           barMinHeight: 8, // a half hour with a single reading still shows as a dot
-          itemStyle: { color: t['series-1'], borderRadius: 4 },
+          itemStyle: { color: fade(t.heart, 1, 0.5), borderRadius: 4, ...glow(t.heart, 10) },
           data: mid.map((x, i) => [x, lows[i] != null && highs[i] != null ? highs[i]! - lows[i]! : null]),
         },
         // The night's peak and lowest: a ringed dot on the exact value, with its number
@@ -90,7 +91,7 @@ export function SleepHeartRateNight({ sleep }: { sleep: Sleep | null }) {
           name: 'Extremes',
           silent: true,
           symbolSize: 8,
-          itemStyle: { color: t['series-1'], borderColor: t.surface, borderWidth: 2 },
+          itemStyle: { color: t.heart, borderColor: t.surface, borderWidth: 2, ...glow(t.heart, 12) },
           z: 3,
           data: [
             { value: [mid[peak], highs[peak]], label: { show: true, position: 'top', distance: 6, ...extreme('MAX', highs[peak]) } },
@@ -128,6 +129,7 @@ export function SleepHeartRateNight({ sleep }: { sleep: Sleep | null }) {
   return (
     <ChartCard
       title="Heart rate during sleep"
+      accent="var(--heart)"
       table={{
         head: ['Time', 'Lowest', 'Highest'],
         rows: night.intervals.map((i) => [time24(i.start), withUnit(i.min, 'bpm'), withUnit(i.max, 'bpm')]),

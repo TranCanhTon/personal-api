@@ -12,6 +12,8 @@ import {
   maxWithGoal,
   notLoggedSeries,
   roundTop,
+  fade,
+  glow,
 } from "../../lib/chartKit";
 import { shortDate, weekday } from "../../lib/dates";
 import { duration, mean, NOT_LOGGED, time24, withUnit } from "../../lib/format";
@@ -149,7 +151,7 @@ export function SleepRange({ days }: { days: Day[] }) {
           ...BAR,
           stack: "night",
           name: "In bed",
-          itemStyle: { color: t["series-1"], borderRadius: 4 },
+          itemStyle: { color: fade(t.schedule, 1, 0.45), borderRadius: 6, ...glow(t.schedule, 12) },
           data: d.bed.map((b, i) => (both[i] ? d.wake[i]! - b! : null)),
           markLine: goalLine(t, avgBed),
         },
@@ -190,7 +192,7 @@ export function SleepRange({ days }: { days: Day[] }) {
           stack: "range",
           barMaxWidth: 12,
           name: "Lowest to peak",
-          itemStyle: { color: t["series-1"], borderRadius: 4 },
+          itemStyle: { color: fade(t.heart, 1, 0.5), borderRadius: 6, ...glow(t.heart, 12) },
           data: d.hrMin.map((v, i) =>
             d.hrMissing[i] ? null : d.hrMax[i]! - v!,
           ),
@@ -246,6 +248,7 @@ export function SleepRange({ days }: { days: Day[] }) {
     <div className="space-y-4">
       <Headline
         label="Average time asleep"
+        accent="var(--sleep)"
         value={duration(avgTotal)}
         muted={avgTotal == null}
       />
@@ -253,11 +256,13 @@ export function SleepRange({ days }: { days: Day[] }) {
       <div className="grid grid-cols-2 gap-3">
         <StatTile
           label="Avg bed time"
+          accent="var(--schedule)"
           value={avgBed == null ? NOT_LOGGED : nightClock(avgBed)}
           muted={avgBed == null}
         />
         <StatTile
           label="Avg wake time"
+          accent="var(--schedule)"
           value={avgWake == null ? NOT_LOGGED : nightClock(avgWake)}
           muted={avgWake == null}
         />
@@ -266,6 +271,7 @@ export function SleepRange({ days }: { days: Day[] }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
           title="Time asleep"
+          accent="var(--sleep)"
           legend={
             goals.sleepHours != null
               ? [{ label: "Goal", color: t["ink-2"], kind: "goal" }]
@@ -302,10 +308,11 @@ export function SleepRange({ days }: { days: Day[] }) {
 
         <ChartCard
           title="Sleep schedule"
+          accent="var(--schedule)"
           legend={[
             {
               label: "Bedtime to wake time",
-              color: t["series-1"],
+              color: t.schedule,
               kind: "bar",
             },
             { label: "Avg bedtime", color: t["ink-2"], kind: "goal" },
@@ -330,6 +337,7 @@ export function SleepRange({ days }: { days: Day[] }) {
 
         <ChartCard
           title="Heart rate during sleep"
+          accent="var(--heart)"
           footer={<Readout {...hrReadout} />}
           table={{
             head: ["Date", "Lowest", "Peak"],
