@@ -1,95 +1,55 @@
 @import 'tailwindcss';
 
-/* Colour tokens. Charts read these too (src/lib/theme.tsx), so this is the one place colours live.
-   Values come from the validated dataviz palette; dark values are their own steps, not an inversion. */
+/* Colour tokens, dark only. Charts read these too (src/lib/theme.ts), so this is the one place colours live.
+   Each area has its own neon colour; the categorical sets (sleep stages, macros, heart lines, steps)
+   were run through the dataviz validator for colour-blind separation on the card surface. */
 :root {
-  color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --muted: #898781;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --wash: rgba(11, 11, 11, 0.04);
-
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-
-  /* Sleep stages: one-hue ordinal ramp (deep = most contrast), awake in orange */
-  --stage-deep: #184f95;
-  --stage-core: #3987e5;
-  --stage-rem: #86b6ef;
-  --stage-awake: #eb6834;
-
-  --good: #006300;
-
-  /* Steps: lighter blue for normal days, dark blue for days that hit the goal (validated ordinal pair) */
-  --steps: #86b6ef;
-  --steps-goal: #1c5cab;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) {
-    color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --wash: rgba(255, 255, 255, 0.05);
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --stage-deep: #9ec5f4;
-    --stage-core: #3987e5;
-    --stage-rem: #1c5cab;
-    --stage-awake: #d95926;
-    --good: #0ca30c;
-    --steps: #6da7ec;
-    --steps-goal: #1c5cab;
-  }
-}
-
-:root[data-theme='dark'] {
   color-scheme: dark;
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --ink: #ffffff;
-  --ink-2: #c3c2b7;
-  --muted: #898781;
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --wash: rgba(255, 255, 255, 0.05);
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --stage-deep: #9ec5f4;
-  --stage-core: #3987e5;
-  --stage-rem: #1c5cab;
-  --stage-awake: #d95926;
-  --good: #0ca30c;
-  --steps: #6da7ec;
-  --steps-goal: #1c5cab;
+  --page: #06060a;
+  --surface: #0f0f17;
+  --surface-2: #151520;
+  --ink: #f4f4f8;
+  --ink-2: #a6a6bb;
+  --muted: #6c6c82;
+  --grid: rgba(255, 255, 255, 0.06);
+  --axis: rgba(255, 255, 255, 0.14);
+  --border: rgba(255, 255, 255, 0.08);
+  --wash: rgba(255, 255, 255, 0.04);
+
+  /* Areas */
+  --calories: #ff8a3d;
+  --steps: #15803d;
+  --steps-goal: #4ade80;
+  --heart: #ff4d6d;
+  --heart-2: #fda4af;
+  --protein: #ea580c;
+  --carbs: #fcd34d;
+  --fat: #14b8a6;
+  --schedule: #818cf8;
+
+  /* Sleep stages: deep violet → light indigo → cyan, awake in pink */
+  --stage-deep: #6d28d9;
+  --stage-core: #818cf8;
+  --stage-rem: #22d3ee;
+  --stage-awake: #f472b6;
+
+  /* Tab accents (glow behind the page, active tab) */
+  --fitness: #ff8a3d;
+  --sleep: #818cf8;
 }
 
 @theme inline {
   --color-page: var(--page);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-muted: var(--muted);
   --color-grid: var(--grid);
   --color-line: var(--border);
   --color-wash: var(--wash);
-  --color-good: var(--good);
-  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Unbounded Variable', 'Inter Variable', system-ui, sans-serif;
 }
 
 body {
@@ -99,25 +59,26 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Readout cards: a changed number fades and rises into place, so the update is easy to spot */
-@keyframes readout-in {
-  from {
-    opacity: 0.3;
-    transform: translateY(3px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+/* Glass card: dark translucent fill with a faint top highlight */
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01)), var(--surface);
+  border: 1px solid var(--border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 30px -12px rgba(0, 0, 0, 0.6);
 }
 
-.readout-in {
-  display: inline-block;
-  animation: readout-in 180ms ease-out;
+/* Big display numbers in an area colour, softly glowing */
+.neon-text {
+  color: var(--accent, var(--ink));
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent, transparent) 45%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .readout-in {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

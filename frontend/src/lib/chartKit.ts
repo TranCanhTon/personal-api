@@ -1,5 +1,6 @@
 // Shared building blocks so every chart has the same axes, tooltip, goal line and "not logged" look.
 import type { CustomSeriesRenderItem } from 'echarts'
+import { graphic } from 'echarts/core'
 import type { ChartOption } from '../components/EChart'
 import { dayNumber } from './dates'
 import type { Tokens } from './theme'
@@ -39,7 +40,12 @@ type BaseArgs = {
 /** Grid, axes and tooltip shared by every range chart. Series are added by the caller. */
 export function baseOption({ t, dates, tooltip, pointer = 'line', yAxis = {}, hideTooltip = false }: BaseArgs): ChartOption {
   return {
-    animationDuration: 300,
+    // Bars and points grow in one after another, left to right
+    animationDuration: 900,
+    animationEasing: 'cubicOut',
+    animationDelay: (i: number) => i * 35,
+    animationDurationUpdate: 500,
+    textStyle: { fontFamily: 'Inter Variable, system-ui, sans-serif' },
     grid: { left: 4, right: 12, top: 28, bottom: 4, containLabel: true },
     xAxis: {
       type: 'category',
@@ -64,7 +70,7 @@ export function baseOption({ t, dates, tooltip, pointer = 'line', yAxis = {}, hi
       borderColor: t.border,
       borderWidth: 1,
       padding: [8, 12],
-      extraCssText: 'box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;',
+      extraCssText: 'box-shadow:0 10px 30px rgba(0,0,0,0.5);border-radius:12px;',
       axisPointer: pointer === 'line' ? { type: 'line', lineStyle: { color: t.axis } } : { type: 'shadow', shadowStyle: { color: t.wash } },
       formatter: (params: { dataIndex: number } | { dataIndex: number }[]) => {
         const first = Array.isArray(params) ? params[0] : params
@@ -132,16 +138,37 @@ export function notLoggedSeries(t: Tokens, missing: boolean[]) {
 export const BAR = { barMaxWidth: 24 }
 export const roundTop = [4, 4, 0, 0]
 
-/** Line spec: 2px, markers >= 8px with a 2px surface ring. */
-export function lineStyle(t: Tokens, color: string) {
+/** '#ff4d6d' + 0.4 → '#ff4d6d66' */
+export function withAlpha(hex: string, alpha: number): string {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex
+  return hex + Math.round(alpha * 255).toString(16).padStart(2, '0')
+}
+
+/** Vertical gradient for bars and areas: strong at the top, fading toward the baseline. */
+export function fade(color: string, top = 1, bottom = 0.3) {
+  return new graphic.LinearGradient(0, 0, 0, 1, [
+    { offset: 0, color: withAlpha(color, top) },
+    { offset: 1, color: withAlpha(color, bottom) },
+  ])
+}
+
+/** Neon glow around a mark. */
+export function glow(color: string, blur = 14) {
+  return { shadowBlur: blur, shadowColor: withAlpha(color, 0.7) }
+}
+
+/** Line spec: 2px glowing line, markers >= 8px with a 2px surface ring; optional gradient area underneath. */
+export function lineStyle(t: Tokens, color: string, { area = false }: { area?: boolean } = {}) {
   return {
     type: 'line',
     connectNulls: false,
     showSymbol: true,
     symbol: 'circle',
     symbolSize: 8,
-    lineStyle: { width: 2, color, cap: 'round', join: 'round' },
+    smooth: 0.25,
+    lineStyle: { width: 2.5, color, cap: 'round', join: 'round', ...glow(color, 12) },
     itemStyle: { color, borderColor: t.surface, borderWidth: 2 },
-    emphasis: { scale: 1.4 },
+    areaStyle: area ? { color: fade(color, 0.28, 0) } : undefined,
+    emphasis: { scale: 1.5 },
   }
 }
