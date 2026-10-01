@@ -87,6 +87,13 @@ npm run gen:api
 
 Goals (steps, calorie intake, protein, sleep) are edited on the page and saved in the browser.
 
+### In production
+
+Every deploy builds the site and copies it to the server. An nginx container
+(`deploy/nginx.conf`) serves it on the same domain as the API: `/` is the
+website, `/api/*` goes to the API for the website, and every other path
+(`/ingest/health`, `/days`, `/docs` ...) still goes straight to the API.
+
 ## Tests
 
 Tests run against a real Postgres (the app uses Postgres upserts and JSONB).

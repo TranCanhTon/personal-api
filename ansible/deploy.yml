@@ -30,6 +30,15 @@
         regexp: "^IMAGE_TAG="
         line: "IMAGE_TAG={{ image_tag }}"
 
+    - name: Copy the built website
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../frontend/dist/"
+        dest: "{{ app_dir }}/frontend/dist/"
+        owner: root
+        group: root
+        mode: "0644"
+        directory_mode: "0755"
+
     - name: Pull the prebuilt image
       ansible.builtin.command:
         cmd: "{{ compose }} pull backend"
@@ -43,6 +52,13 @@
       register: compose_up
       changed_when: "'Started' in compose_up.stderr or 'Recreated' in compose_up.stderr"
 
+    # Picks up a changed nginx.conf (git replaces the file, which a running container won't see)
+    - name: Restart the web server
+      ansible.builtin.command:
+        cmd: "{{ compose }} restart web"
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
     - name: Wait for the API to respond
       ansible.builtin.uri:
         url: http://localhost:8000/health
@@ -51,6 +67,13 @@
       until: health.status == 200
       retries: 30
       delay: 5
+
+    - name: Check the website loads
+      ansible.builtin.uri:
+        url: http://localhost:8000/
+        return_content: true
+      register: site
+      failed_when: "'<div id=\"root\">' not in site.content"
 
     - name: Remove images no container is using
       ansible.builtin.command: docker image prune -af
