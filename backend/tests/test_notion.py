@@ -157,10 +157,26 @@ def test_sync_removes_deleted_pages(client, fake_notion):
 
 def test_sync_status_shows_latest_run(client, fake_notion):
     client.post("/ingest/notion/sync", headers=AUTH)
-    status = client.get("/sync/status").json()
-    assert status[0]["source"] == "notion"
-    assert status[0]["status"] == "ok"
-    assert status[0]["records"] == 6
+    status = {s["source"]: s for s in client.get("/sync/status").json()}
+    assert status["notion"]["status"] == "ok"
+    assert status["notion"]["records"] == 3
+    assert status["notion_trades"]["status"] == "ok"
+    assert status["notion_trades"]["records"] == 3
+
+
+def test_trades_still_sync_when_todos_fail(client, fake_notion):
+    def broken_page(page_id):
+        raise RuntimeError("Notion 500 on the to do page")
+
+    fake_notion.child_databases = broken_page
+    res = client.post("/ingest/notion/sync", headers=AUTH)
+    assert res.status_code == 502
+
+    status = {s["source"]: s for s in client.get("/sync/status").json()}
+    assert status["notion"]["status"] == "error"
+    assert "Notion 500" in status["notion"]["error"]
+    assert status["notion_trades"]["status"] == "ok"
+    assert len(client.get("/trades").json()["trades"]) == 3
 
 
 # ---------- webhook ----------

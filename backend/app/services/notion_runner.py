@@ -7,7 +7,7 @@ from app.config import settings
 from app.database import SessionLocal
 from app.services.db_utils import sync_run
 from app.services.notion_client import NotionClient
-from app.services.notion_sync import NotionSyncResult, sync_notion
+from app.services.notion_sync import NotionSyncResult, sync_todos, sync_trades
 
 logger = logging.getLogger(__name__)
 
@@ -16,20 +16,34 @@ _rerun_requested = False
 
 
 def run_notion_sync(db: Session) -> NotionSyncResult:
+    """Syncs the to do list and the trading journal as two separate runs, so one failing doesn't block the other.
+
+    Each part commits or rolls back on its own and has its own row in /sync/status
+    ("notion" for to dos, "notion_trades" for trades). If any part failed, its error is raised after all ran.
+    """
     client = NotionClient(settings.notion_token)
+    result = NotionSyncResult()
+    parts = [("notion", lambda: sync_todos(db, client, settings.notion_todo_page_id, result), lambda: result.todos)]
+    if settings.notion_sync_trades:
+        parts.append(
+            ("notion_trades", lambda: sync_trades(db, client, settings.notion_trades_database_id, result), lambda: result.trades)
+        )
+
+    errors: list[Exception] = []
     try:
-        with sync_run(db, "notion") as log:
-            result = sync_notion(
-                db,
-                client,
-                settings.notion_todo_page_id,
-                settings.notion_trades_database_id,
-                include_trades=settings.notion_sync_trades,
-            )
-            log.records = result.records
-        return result
+        for source, sync, records in parts:
+            try:
+                with sync_run(db, source) as log:
+                    sync()
+                    log.records = records()
+            except Exception as exc:
+                logger.exception("Notion sync failed: %s", source)
+                errors.append(exc)
     finally:
         client.close()
+    if errors:
+        raise errors[0]
+    return result
 
 
 def run_notion_sync_in_background() -> None:
