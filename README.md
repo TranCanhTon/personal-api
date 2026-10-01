@@ -63,6 +63,30 @@ The database schema is created automatically by Alembic on startup.
 
 Stop with `Ctrl+C`, or `docker compose down`. Add `-v` to also wipe the database.
 
+## Website
+
+A dashboard for the data, in `frontend/`: React, TypeScript, Vite, Tailwind, ECharts and TanStack Query.
+Fitness and Sleep tabs, each with Day, Week (last 7 days) and Month (last 30 days) views.
+It refreshes every minute and whenever you switch back to the tab.
+
+Needs Node 20+ and the Docker API running (above).
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. In dev, requests to `/api/*` are passed on to http://localhost:8000.
+
+After changing the API's response shapes, regenerate the TypeScript types (with the API running):
+
+```bash
+npm run gen:api
+```
+
+Goals (steps, calorie intake, protein, sleep) are edited on the page and saved in the browser.
+
 ## Tests
 
 Tests run against a real Postgres (the app uses Postgres upserts and JSONB).
@@ -103,6 +127,13 @@ backend/
     services/          Apple Health import, Notion sync, read queries
   migrations/          Alembic migrations
   tests/
+frontend/
+  src/
+    api/               fetch hooks and generated API types
+    components/        chart card, stat tile, period bar, goals, theme toggle
+    features/          fitness and sleep views
+    lib/               dates, formatting, chart helpers, theme and goals
+    providers/         theme and goals state
 docker-compose.yml           base services (db, backend)
 docker-compose.override.yml  local dev: ports, hot reload
 ```
