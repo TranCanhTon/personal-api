@@ -1,0 +1,123 @@
+@import 'tailwindcss';
+
+/* Colour tokens. Charts read these too (src/lib/theme.tsx), so this is the one place colours live.
+   Values come from the validated dataviz palette; dark values are their own steps, not an inversion. */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --wash: rgba(11, 11, 11, 0.04);
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+
+  /* Sleep stages: one-hue ordinal ramp (deep = most contrast), awake in orange */
+  --stage-deep: #184f95;
+  --stage-core: #3987e5;
+  --stage-rem: #86b6ef;
+  --stage-awake: #eb6834;
+
+  --good: #006300;
+
+  /* Steps: lighter blue for normal days, dark blue for days that hit the goal (validated ordinal pair) */
+  --steps: #86b6ef;
+  --steps-goal: #1c5cab;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --wash: rgba(255, 255, 255, 0.05);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --stage-deep: #9ec5f4;
+    --stage-core: #3987e5;
+    --stage-rem: #1c5cab;
+    --stage-awake: #d95926;
+    --good: #0ca30c;
+    --steps: #6da7ec;
+    --steps-goal: #1c5cab;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --wash: rgba(255, 255, 255, 0.05);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --stage-deep: #9ec5f4;
+  --stage-core: #3987e5;
+  --stage-rem: #1c5cab;
+  --stage-awake: #d95926;
+  --good: #0ca30c;
+  --steps: #6da7ec;
+  --steps-goal: #1c5cab;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-line: var(--border);
+  --color-wash: var(--wash);
+  --color-good: var(--good);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Readout cards: a changed number fades and rises into place, so the update is easy to spot */
+@keyframes readout-in {
+  from {
+    opacity: 0.3;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.readout-in {
+  display: inline-block;
+  animation: readout-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readout-in {
+    animation: none;
+  }
+}
