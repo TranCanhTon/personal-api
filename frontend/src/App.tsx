@@ -1,13 +1,17 @@
+import { motion } from 'motion/react'
 import { useState } from 'react'
 import { useDays } from './api/client'
+import { Backdrop } from './components/Backdrop'
 import { GoalsPanel } from './components/GoalsPanel'
 import { PeriodBar } from './components/PeriodBar'
-import { ThemeToggle } from './components/ThemeToggle'
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { FitnessDay } from './features/fitness/FitnessDay'
 import { FitnessRange } from './features/fitness/FitnessRange'
 import { SleepDay } from './features/sleep/SleepDay'
 import { SleepRange } from './features/sleep/SleepRange'
 import { addDays, todayISO, VIEW_DAYS, windowFor, type View } from './lib/dates'
+import { stagger } from './lib/motion'
+import { useTheme } from './lib/theme'
 
 type Tab = 'fitness' | 'sleep'
 
@@ -17,6 +21,7 @@ const TABS: { value: Tab; label: string }[] = [
 ]
 
 export default function App() {
+  const { tokens: t } = useTheme()
   const [tab, setTab] = useState<Tab>('fitness')
   const [view, setView] = useState<View>('week')
   // null means "follow today", so a page left open past midnight rolls over by itself
@@ -37,68 +42,78 @@ export default function App() {
   // While a new period loads, keep showing the previous one, dimmed, instead of flashing empty
   const stale = query.isPlaceholderData
 
+  const accent = tab === 'fitness' ? t.fitness : t.sleep
+  const glow: [string, string, string] = tab === 'fitness' ? [t.calories, t['steps-goal'], t.heart] : [t.sleep, t['stage-deep'], t['stage-rem']]
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-ink">Personal Dashboard</h1>
-        <div className="flex items-center gap-2">
+    <>
+      <Backdrop colors={glow} />
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-lg font-semibold tracking-tight sm:text-xl">
+            <span className="bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent">Personal</span>{' '}
+            <motion.span
+              className="bg-clip-text text-transparent"
+              animate={{ backgroundImage: `linear-gradient(90deg, ${accent}, ${glow[1]})` }}
+              transition={{ duration: 0.8 }}
+            >
+              Dashboard
+            </motion.span>
+          </h1>
           <GoalsPanel />
-          <ThemeToggle />
+        </header>
+
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-6">
+          <TabsList>
+            {TABS.map((x) => (
+              <TabsTrigger key={x.value} value={x.value} active={tab === x.value} accent={accent} group="main">
+                {x.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        <div className="mt-5">
+          <PeriodBar
+            view={view}
+            onView={setView}
+            end={end}
+            onStep={step}
+            onToday={() => setPinnedEnd(null)}
+            atToday={atToday}
+            refreshing={query.isFetching}
+            accent={accent}
+          />
         </div>
-      </header>
 
-      <nav className="mt-5 flex gap-1 border-b border-line" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.value}
-            onClick={() => setTab(t.value)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm ${
-              tab === t.value ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+        <main className={`mt-6 transition-opacity ${stale ? 'opacity-50' : ''}`} role="tabpanel">
+          {query.isError && !days && (
+            <div className="glass rounded-2xl p-5 text-sm text-ink-2">
+              Can't reach the API.
+              <div className="mt-1 text-xs text-muted">{String(query.error)}</div>
+            </div>
+          )}
+          {query.isError && days && <p className="mb-3 text-xs text-muted">Couldn't refresh. Showing the last data received.</p>}
+          {!days && query.isPending && <p className="text-sm text-muted">Loading…</p>}
 
-      <div className="mt-4">
-        <PeriodBar
-          view={view}
-          onView={setView}
-          end={end}
-          onStep={step}
-          onToday={() => setPinnedEnd(null)}
-          atToday={atToday}
-          refreshing={query.isFetching}
-        />
+          {days && (
+            // Re-keyed per tab and view, so the cards rise in again one after another
+            <motion.div key={`${tab}-${view}`} variants={stagger} initial="hidden" animate="show">
+              {tab === 'fitness' ? (
+                view === 'day' ? (
+                  <FitnessDay day={days[days.length - 1]} />
+                ) : (
+                  <FitnessRange days={days} />
+                )
+              ) : view === 'day' ? (
+                <SleepDay day={days[days.length - 1]} />
+              ) : (
+                <SleepRange days={days} />
+              )}
+            </motion.div>
+          )}
+        </main>
       </div>
-
-      <main className={`mt-5 transition-opacity ${stale ? 'opacity-50' : ''}`} role="tabpanel">
-        {query.isError && !days && (
-          <div className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-2">
-            Can't reach the API. Is the Docker backend running on localhost:8000?
-            <div className="mt-1 text-xs text-muted">{String(query.error)}</div>
-          </div>
-        )}
-        {query.isError && days && <p className="mb-3 text-xs text-muted">Couldn't refresh. Showing the last data received.</p>}
-        {!days && query.isPending && <p className="text-sm text-muted">Loading…</p>}
-
-        {days &&
-          (tab === 'fitness' ? (
-            view === 'day' ? (
-              <FitnessDay day={days[days.length - 1]} />
-            ) : (
-              <FitnessRange days={days} />
-            )
-          ) : view === 'day' ? (
-            <SleepDay day={days[days.length - 1]} />
-          ) : (
-            <SleepRange days={days} />
-          ))}
-      </main>
-    </div>
+    </>
   )
 }
