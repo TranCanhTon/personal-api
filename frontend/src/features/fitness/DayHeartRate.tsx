@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import type { Day } from '../../api/client'
+import { AnimatedValue } from '../../components/AnimatedValue'
 import { ChartCard } from '../../components/ChartCard'
 import { EChart } from '../../components/EChart'
 import { Readout } from '../../components/Readout'
+import { fade, glow } from '../../lib/chartKit'
 import { NOT_LOGGED, time24, withUnit } from '../../lib/format'
 import { useTheme } from '../../lib/theme'
 
@@ -73,7 +75,7 @@ export function DayHeartRate({ day }: { day: Day }) {
           stack: 'range',
           barWidth: 8,
           barMinHeight: 8, // an hour with a single reading still shows as a dot
-          itemStyle: { color: t['series-1'], borderRadius: 4 },
+          itemStyle: { color: fade(t.heart, 1, 0.55), borderRadius: 4, ...glow(t.heart, 10) },
           data: mid.map((x, i) => [x, lows[i] != null && highs[i] != null ? highs[i]! - lows[i]! : null]),
         },
       ],
@@ -101,6 +103,7 @@ export function DayHeartRate({ day }: { day: Day }) {
   return (
     <ChartCard
       title="Heart rate"
+      accent="var(--heart)"
       table={{
         head: ['Hour', 'Lowest', 'Highest'],
         rows: hours.intervals.map((i) => [time24(i.start), withUnit(i.min, 'bpm'), withUnit(i.max, 'bpm')]),
@@ -108,8 +111,13 @@ export function DayHeartRate({ day }: { day: Day }) {
       footer={option ? <Readout {...readout} /> : undefined}
     >
       <div className="mb-1">
-        <div className="text-xs text-ink-2">Average</div>
-        <div className={`text-2xl font-semibold ${hr?.avg == null ? 'text-muted' : 'text-ink'}`}>{withUnit(hr?.avg, 'bpm')}</div>
+        <div className="text-[11px] tracking-[0.14em] text-ink-2 uppercase">Average</div>
+        <div
+          className={`mt-1 font-display text-2xl font-semibold ${hr?.avg == null ? 'text-muted' : 'neon-text'}`}
+          style={{ '--accent': 'var(--heart)' } as CSSProperties}
+        >
+          {hr?.avg == null ? NOT_LOGGED : <AnimatedValue text={withUnit(hr.avg, 'bpm')} />}
+        </div>
       </div>
       {option ? (
         <EChart option={option} label="Heart rate across the day, lowest and highest per hour" onHover={setHoveredAt} />

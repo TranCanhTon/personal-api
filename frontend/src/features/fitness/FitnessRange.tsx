@@ -4,7 +4,7 @@ import { ChartCard } from '../../components/ChartCard'
 import { EChart } from '../../components/EChart'
 import { Readout } from '../../components/Readout'
 import { StatTile } from '../../components/StatTile'
-import { BAR, baseOption, goalLine, lineStyle, maxWithGoal, notLoggedSeries, roundTop, tooltipHtml } from '../../lib/chartKit'
+import { BAR, baseOption, fade, glow, goalLine, lineStyle, maxWithGoal, notLoggedSeries, roundTop, tooltipHtml } from '../../lib/chartKit'
 import { shortDate, weekday } from '../../lib/dates'
 import { mean, num, withUnit } from '../../lib/format'
 import { useGoals } from '../../lib/goals'
@@ -47,11 +47,11 @@ export function FitnessRange({ days }: { days: Day[] }) {
         t,
         dates: d.dates,
         yAxis: { max: maxWithGoal(goals.caloriesIn), axisLabel: { color: t.muted, formatter: (v: number) => num(v) } },
-        tooltip: (i) => tooltipHtml(t, d.titles[i], [{ color: t['series-1'], label: 'Calories in', value: withUnit(d.calIn[i], 'kcal') }]),
+        tooltip: (i) => tooltipHtml(t, d.titles[i], [{ color: t.calories, label: 'Calories in', value: withUnit(d.calIn[i], 'kcal') }]),
       }),
       series: [
         notLoggedSeries(t, d.calIn.map(isNull)),
-        { ...lineStyle(t, t['series-1']), name: 'Calories in', data: d.calIn, markLine: goalLine(t, goals.caloriesIn) },
+        { ...lineStyle(t, t.calories, { area: true }), name: 'Calories in', data: d.calIn, markLine: goalLine(t, goals.caloriesIn) },
       ],
     }),
     [d, t, goals.caloriesIn],
@@ -76,10 +76,13 @@ export function FitnessRange({ days }: { days: Day[] }) {
           type: 'bar',
           ...BAR,
           name: 'Steps',
-          // Days that reached the goal are dark blue
-          data: d.steps.map((v) =>
-            v == null ? null : { value: v, itemStyle: { color: goals.steps != null && v >= goals.steps ? t['steps-goal'] : t.steps } },
-          ),
+          // Days that reached the goal are bright green and glow
+          data: d.steps.map((v) => {
+            if (v == null) return null
+            const hit = goals.steps != null && v >= goals.steps
+            const color = hit ? t['steps-goal'] : t.steps
+            return { value: v, itemStyle: { color: fade(color, 1, hit ? 0.45 : 0.35), ...(hit ? glow(color, 16) : {}) } }
+          }),
           itemStyle: { borderRadius: roundTop },
           markLine: goalLine(t, goals.steps),
         },
@@ -116,11 +119,11 @@ export function FitnessRange({ days }: { days: Day[] }) {
           stack: 'range',
           barMaxWidth: 12,
           name: 'Min–max',
-          itemStyle: { color: t['series-1'], opacity: 0.25, borderRadius: 4 },
+          itemStyle: { color: fade(t.heart, 0.45, 0.15), borderRadius: 6 },
           data: d.hrMin.map((v, i) => (v != null && d.hrMax[i] != null ? d.hrMax[i]! - v : null)),
         },
-        { ...lineStyle(t, t['series-1']), name: 'Average', data: d.hrAvg },
-        { ...lineStyle(t, t['series-2']), name: 'Resting', data: d.hrResting },
+        { ...lineStyle(t, t.heart), name: 'Average', data: d.hrAvg },
+        { ...lineStyle(t, t['heart-2']), name: 'Resting', data: d.hrResting },
       ],
     }),
     [d, t],
@@ -129,9 +132,9 @@ export function FitnessRange({ days }: { days: Day[] }) {
   // ---------- macros ----------
   const macrosOption = useMemo(() => {
     const layers = [
-      { name: 'Protein', values: d.protein, color: t['series-1'] },
-      { name: 'Carbs', values: d.carbs, color: t['series-2'] },
-      { name: 'Fat', values: d.fat, color: t['series-3'] },
+      { name: 'Protein', values: d.protein, color: t.protein },
+      { name: 'Carbs', values: d.carbs, color: t.carbs },
+      { name: 'Fat', values: d.fat, color: t.fat },
     ]
     // Only the top segment of each day's stack gets the rounded end
     const topLayer = d.dates.map((_, i) => {
@@ -176,19 +179,19 @@ export function FitnessRange({ days }: { days: Day[] }) {
   const hrReadout = {
     title: titleFor(hoveredHr),
     items: [
-      { label: 'Resting', swatch: { color: t['series-2'], kind: 'line' as const }, value: fmt(pick(d.hrResting, hoveredHr), 'bpm') },
-      { label: 'Average', swatch: { color: t['series-1'], kind: 'line' as const }, value: fmt(pick(d.hrAvg, hoveredHr), 'bpm') },
-      { label: 'Lowest', swatch: { color: t['series-1'], kind: 'band' as const }, value: fmt(pick(d.hrMin, hoveredHr), 'bpm') },
-      { label: 'Highest', swatch: { color: t['series-1'], kind: 'band' as const }, value: fmt(pick(d.hrMax, hoveredHr), 'bpm') },
+      { label: 'Resting', swatch: { color: t['heart-2'], kind: 'line' as const }, value: fmt(pick(d.hrResting, hoveredHr), 'bpm') },
+      { label: 'Average', swatch: { color: t.heart, kind: 'line' as const }, value: fmt(pick(d.hrAvg, hoveredHr), 'bpm') },
+      { label: 'Lowest', swatch: { color: t.heart, kind: 'band' as const }, value: fmt(pick(d.hrMin, hoveredHr), 'bpm') },
+      { label: 'Highest', swatch: { color: t.heart, kind: 'band' as const }, value: fmt(pick(d.hrMax, hoveredHr), 'bpm') },
     ],
   }
 
   const macrosReadout = {
     title: titleFor(hoveredMacros),
     items: [
-      { label: 'Protein', swatch: { color: t['series-1'], kind: 'bar' as const }, value: fmt(pick(d.protein, hoveredMacros), 'g') },
-      { label: 'Carbs', swatch: { color: t['series-2'], kind: 'bar' as const }, value: fmt(pick(d.carbs, hoveredMacros), 'g') },
-      { label: 'Fat', swatch: { color: t['series-3'], kind: 'bar' as const }, value: fmt(pick(d.fat, hoveredMacros), 'g') },
+      { label: 'Protein', swatch: { color: t.protein, kind: 'bar' as const }, value: fmt(pick(d.protein, hoveredMacros), 'g') },
+      { label: 'Carbs', swatch: { color: t.carbs, kind: 'bar' as const }, value: fmt(pick(d.carbs, hoveredMacros), 'g') },
+      { label: 'Fat', swatch: { color: t.fat, kind: 'bar' as const }, value: fmt(pick(d.fat, hoveredMacros), 'g') },
     ],
   }
 
@@ -198,13 +201,14 @@ export function FitnessRange({ days }: { days: Day[] }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <StatTile label="Avg calories in" value={withUnit(avgIn, 'kcal')} muted={avgIn == null} />
-        <StatTile label="Avg steps" value={num(avgSteps)} muted={avgSteps == null} />
+        <StatTile label="Avg calories in" value={withUnit(avgIn, 'kcal')} accent="var(--calories)" muted={avgIn == null} />
+        <StatTile label="Avg steps" value={num(avgSteps)} accent="var(--steps-goal)" muted={avgSteps == null} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
           title="Calories in"
+          accent="var(--calories)"
           summary={`Avg ${withUnit(avgIn, 'kcal')}`}
           legend={goals.caloriesIn ? [{ label: `Intake goal ${num(goals.caloriesIn)} kcal`, color: t['ink-2'], kind: 'goal' }] : []}
           table={{ head: ['Date', 'Calories in'], rows: idx.map((i) => row(i, [withUnit(d.calIn[i], 'kcal')])) }}
@@ -214,6 +218,7 @@ export function FitnessRange({ days }: { days: Day[] }) {
 
         <ChartCard
           title="Steps"
+          accent="var(--steps-goal)"
           summary={`Avg ${num(avgSteps)}`}
           legend={[
             { label: 'Steps', color: t.steps, kind: 'bar' },
@@ -231,6 +236,7 @@ export function FitnessRange({ days }: { days: Day[] }) {
 
         <ChartCard
           title="Heart rate"
+          accent="var(--heart)"
           footer={<Readout {...hrReadout} />}
           table={{
             head: ['Date', 'Resting', 'Min', 'Avg', 'Max'],
@@ -242,6 +248,7 @@ export function FitnessRange({ days }: { days: Day[] }) {
 
         <ChartCard
           title="Macros"
+          accent="var(--protein)"
           footer={<Readout {...macrosReadout} />}
           table={{
             head: ['Date', 'Protein', 'Carbs', 'Fat'],
