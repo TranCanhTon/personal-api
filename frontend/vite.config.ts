@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
     // ECharts is most of the bundle (~280 kB gzipped in total); fine for a personal dashboard
     build: { chunkSizeWarningLimit: 1000 },
     server: {
+      // The preview pane assigns a free port through PORT; plain `npm run dev` keeps 5173.
+      port: Number(process.env.PORT) || 5173,
       // The site calls /api/...; the dev server passes it on, so no CORS setup is needed.
       // In production nginx will do the same job.
       proxy: {
