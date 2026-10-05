@@ -36,6 +36,11 @@
   /* Tab accents (glow behind the page, active tab) */
   --fitness: #ff8a3d;
   --sleep: #818cf8;
+  --chess: #a3e635;
+
+  /* Game results */
+  --win: #2dd4bf;
+  --loss: #fb7185;
 }
 
 @theme inline {

@@ -24,6 +24,9 @@ const TOKEN_NAMES = [
   'stage-awake',
   'fitness',
   'sleep',
+  'chess',
+  'win',
+  'loss',
 ] as const
 
 export type Tokens = Record<(typeof TOKEN_NAMES)[number], string>

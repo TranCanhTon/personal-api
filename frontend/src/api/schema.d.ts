@@ -141,6 +141,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/chess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chess
+         * @description chess.com: rating, record, colour and opening stats over every saved game, plus a page of games.
+         */
+        get: operations["get_chess_games_chess_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Goals
+         * @description My targets (steps, calories, macros, sleep, workouts per week). Defaults until first saved.
+         */
+        get: operations["get_goals_goals_get"];
+        /**
+         * Put Goals
+         * @description Replaces my targets. A field set to null switches that goal off.
+         */
+        put: operations["put_goals_goals_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/streaks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Streaks
+         * @description Food logging streak in days and gym streak in weeks, as of today.
+         */
+        get: operations["get_streaks_streaks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sync/status": {
         parameters: {
             query?: never;
@@ -201,6 +265,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/alerts/food-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Food Suggestion
+         * @description Runs the evening food check now, instead of waiting for the scheduled time.
+         */
+        post: operations["trigger_food_suggestion_alerts_food_suggestion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/weekly-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Weekly Report
+         * @description Builds and sends this week's report now.
+         */
+        post: operations["trigger_weekly_report_alerts_weekly_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/notion": {
         parameters: {
             query?: never;
@@ -222,6 +326,205 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Chess */
+        Chess: {
+            /** Time Class */
+            time_class: string;
+            /**
+             * @default {
+             *       "games": 0,
+             *       "wins": 0,
+             *       "losses": 0,
+             *       "draws": 0,
+             *       "abandoned": 0
+             *     }
+             */
+            summary: components["schemas"]["ChessSummary"];
+            /**
+             * @default {
+             *       "games": 0,
+             *       "wins": 0,
+             *       "losses": 0,
+             *       "draws": 0
+             *     }
+             */
+            white: components["schemas"]["ChessRecord"];
+            /**
+             * @default {
+             *       "games": 0,
+             *       "wins": 0,
+             *       "losses": 0,
+             *       "draws": 0
+             *     }
+             */
+            black: components["schemas"]["ChessRecord"];
+            /**
+             * Openings
+             * @default []
+             */
+            openings: components["schemas"]["ChessOpening"][];
+            /**
+             * Rating History
+             * @default []
+             */
+            rating_history: components["schemas"]["ChessRatingPoint"][];
+            /**
+             * Total Games
+             * @default 0
+             */
+            total_games: number;
+            /**
+             * Games
+             * @default []
+             */
+            games: components["schemas"]["ChessGameOut"][];
+        };
+        /** ChessGameOut */
+        ChessGameOut: {
+            /** Uuid */
+            uuid: string;
+            /** Url */
+            url: string;
+            /**
+             * Ended At
+             * Format: date-time
+             */
+            ended_at: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Time Class */
+            time_class: string;
+            /** Time Control */
+            time_control: string;
+            /** Rated */
+            rated: boolean;
+            /** Color */
+            color: string;
+            /** Rating */
+            rating: number;
+            /** Rating Change */
+            rating_change?: number | null;
+            /** Opponent */
+            opponent: string;
+            /** Opponent Rating */
+            opponent_rating?: number | null;
+            /** Result */
+            result: string;
+            /** Opponent Result */
+            opponent_result: string;
+            /** Outcome */
+            outcome: string;
+            /** Abandoned */
+            abandoned: boolean;
+            /** Opening */
+            opening?: string | null;
+            /** Eco */
+            eco?: string | null;
+        };
+        /** ChessOpening */
+        ChessOpening: {
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
+            /**
+             * Wins
+             * @default 0
+             */
+            wins: number;
+            /**
+             * Losses
+             * @default 0
+             */
+            losses: number;
+            /**
+             * Draws
+             * @default 0
+             */
+            draws: number;
+            /** Win Rate */
+            win_rate?: number | null;
+            /** Opening */
+            opening: string;
+        };
+        /** ChessRatingPoint */
+        ChessRatingPoint: {
+            /**
+             * Ended At
+             * Format: date-time
+             */
+            ended_at: string;
+            /** Rating */
+            rating: number;
+        };
+        /**
+         * ChessRecord
+         * @description Games that ended normally. Abandoned games are listed in the history but not counted here.
+         */
+        ChessRecord: {
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
+            /**
+             * Wins
+             * @default 0
+             */
+            wins: number;
+            /**
+             * Losses
+             * @default 0
+             */
+            losses: number;
+            /**
+             * Draws
+             * @default 0
+             */
+            draws: number;
+            /** Win Rate */
+            win_rate?: number | null;
+        };
+        /** ChessSummary */
+        ChessSummary: {
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
+            /**
+             * Wins
+             * @default 0
+             */
+            wins: number;
+            /**
+             * Losses
+             * @default 0
+             */
+            losses: number;
+            /**
+             * Draws
+             * @default 0
+             */
+            draws: number;
+            /** Win Rate */
+            win_rate?: number | null;
+            /** Rating */
+            rating?: number | null;
+            /** Best Rating */
+            best_rating?: number | null;
+            /** Best Rating Date */
+            best_rating_date?: string | null;
+            /**
+             * Abandoned
+             * @default 0
+             */
+            abandoned: number;
+        };
         /** Day */
         Day: {
             /**
@@ -291,6 +594,46 @@ export interface components {
              * Format: date
              */
             date: string;
+        };
+        /** FoodStreak */
+        FoodStreak: {
+            /** Current */
+            current: number;
+            /** Best */
+            best: number;
+            /** Logged Today */
+            logged_today: boolean;
+        };
+        /**
+         * GoalsIn
+         * @description My targets. None switches a goal off.
+         */
+        GoalsIn: {
+            /** Steps */
+            steps?: number | null;
+            /** Calories In */
+            calories_in?: number | null;
+            /** Protein G */
+            protein_g?: number | null;
+            /** Carbs G */
+            carbs_g?: number | null;
+            /** Fat G */
+            fat_g?: number | null;
+            /** Sleep Hours */
+            sleep_hours?: number | null;
+            /** Workouts Per Week */
+            workouts_per_week?: number | null;
+        };
+        /** GymStreak */
+        GymStreak: {
+            /** Current */
+            current: number;
+            /** Best */
+            best: number;
+            /** This Week */
+            this_week: number;
+            /** Target */
+            target?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -400,6 +743,11 @@ export interface components {
             /** Awake Min */
             awake_min?: number | null;
             heart_rate?: components["schemas"]["SleepHeartRate"] | null;
+        };
+        /** Streaks */
+        Streaks: {
+            food: components["schemas"]["FoodStreak"];
+            gym: components["schemas"]["GymStreak"];
         };
         /** SyncStatus */
         SyncStatus: {
@@ -811,6 +1159,117 @@ export interface operations {
             };
         };
     };
+    get_chess_games_chess_get: {
+        parameters: {
+            query?: {
+                /** @description Which kind of game */
+                time_class?: string;
+                /** @description Games per page */
+                limit?: number;
+                /** @description Games to skip, newest first */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Chess"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_goals_goals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalsIn"];
+                };
+            };
+        };
+    };
+    put_goals_goals_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalsIn"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_streaks_streaks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Streaks"];
+                };
+            };
+        };
+    };
     sync_status_sync_status_get: {
         parameters: {
             query?: never;
@@ -869,6 +1328,74 @@ export interface operations {
     sync_notion_now_ingest_notion_sync_post: {
         parameters: {
             query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_food_suggestion_alerts_food_suggestion_post: {
+        parameters: {
+            query?: {
+                /** @description Work out what would be sent, but send nothing */
+                dry_run?: boolean;
+            };
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_weekly_report_alerts_weekly_report_post: {
+        parameters: {
+            query?: {
+                /** @description Work out what would be sent, but send nothing */
+                dry_run?: boolean;
+            };
             header?: {
                 "x-api-key"?: string | null;
             };
