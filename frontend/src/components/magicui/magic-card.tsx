@@ -29,8 +29,8 @@ export function MagicCard({ children, className, color = 'var(--ink)', size = 28
     y.set(-size)
   }
 
-  const fill = useMotionTemplate`radial-gradient(${size}px circle at ${x}px ${y}px, color-mix(in srgb, ${color} 12%, transparent), transparent 70%)`
-  const rim = useMotionTemplate`radial-gradient(${size * 0.75}px circle at ${x}px ${y}px, color-mix(in srgb, ${color} 70%, transparent), transparent 70%)`
+  const fill = useMotionTemplate`radial-gradient(${size}px circle at ${x}px ${y}px, color-mix(in srgb, ${color} 6%, transparent), transparent 70%)`
+  const rim = useMotionTemplate`radial-gradient(${size * 0.75}px circle at ${x}px ${y}px, color-mix(in srgb, ${color} 35%, transparent), transparent 70%)`
 
   return (
     <motion.div

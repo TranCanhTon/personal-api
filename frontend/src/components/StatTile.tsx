@@ -47,10 +47,12 @@ function GoalMeter({ value, goal, color }: { value: number; goal: number; color:
         />
       </div>
       {/* Goal marker: a short tick that stands above and below the bar, ringed in the surface colour */}
-      <div
-        className="absolute -top-1 h-3.5 w-1 -translate-x-1/2 rounded-full"
-        style={{ left: `${mark}%`, background: 'var(--ink)', boxShadow: '0 0 0 2px var(--surface)' }}
-      />
+      <div className="group/goal absolute -top-1 -translate-x-1/2 cursor-default py-1 px-2 -my-1" style={{ left: `${mark}%` }}>
+        <div className="h-3.5 w-1 rounded-full" style={{ background: 'var(--ink)', boxShadow: '0 0 0 2px var(--surface)' }} />
+        <div className={`pointer-events-none absolute bottom-full mb-1 rounded-md border border-line bg-surface px-2 py-1 text-xs font-medium whitespace-nowrap text-ink opacity-0 shadow-lg transition-opacity duration-150 group-hover/goal:opacity-100 ${mark > 70 ? 'right-0' : 'left-1/2 -translate-x-1/2'}`}>
+          Goal {goal.toLocaleString()}
+        </div>
+      </div>
     </div>
   )
 }
