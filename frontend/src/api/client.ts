@@ -10,6 +10,7 @@ export type GoalsApi = components['schemas']['GoalsIn']
 export type Streaks = components['schemas']['Streaks']
 export type Chess = components['schemas']['Chess']
 export type ChessGame = components['schemas']['ChessGameOut']
+export type ChessPgn = components['schemas']['ChessPgn']
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -74,4 +75,17 @@ export function useChess(limit: number, enabled = true) {
     placeholderData: keepPreviousData,
     enabled,
   })
+}
+
+/** The moves of one game. Fetched when a game is opened (or hovered), not with the list. */
+export function chessPgnQuery(uuid: string) {
+  return {
+    queryKey: ['chess-pgn', uuid],
+    queryFn: () => getJson<ChessPgn>(`/games/chess/${uuid}`),
+    staleTime: Infinity, // a finished game never changes
+  }
+}
+
+export function useChessPgn(uuid: string) {
+  return useQuery(chessPgnQuery(uuid))
 }

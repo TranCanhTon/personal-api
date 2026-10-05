@@ -161,6 +161,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/chess/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chess Game
+         * @description The moves of one game, for replaying it on a board. Kept apart from the list so the list stays small.
+         */
+        get: operations["get_chess_game_games_chess__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/goals": {
         parameters: {
             query?: never;
@@ -450,6 +470,13 @@ export interface components {
             win_rate?: number | null;
             /** Opening */
             opening: string;
+        };
+        /** ChessPgn */
+        ChessPgn: {
+            /** Uuid */
+            uuid: string;
+            /** Pgn */
+            pgn: string;
         };
         /** ChessRatingPoint */
         ChessRatingPoint: {
@@ -1182,6 +1209,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Chess"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_chess_game_games_chess__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChessPgn"];
                 };
             };
             /** @description Validation Error */

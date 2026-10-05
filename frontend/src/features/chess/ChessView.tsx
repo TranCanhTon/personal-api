@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import type { Chess, ChessGame } from '../../api/client'
+import { useQueryClient } from '@tanstack/react-query'
+import { lazy, Suspense, useMemo, useState } from 'react'
+import { chessPgnQuery, type Chess, type ChessGame } from '../../api/client'
 import { CardTitle, ChartCard } from '../../components/ChartCard'
 import { EChart } from '../../components/EChart'
 import { Headline } from '../../components/Headline'
@@ -13,6 +14,9 @@ import { num } from '../../lib/format'
 import { useTheme } from '../../lib/theme'
 
 export const PAGE_SIZE = 20
+
+// The board and chess engine are only downloaded the first time a game is opened
+const GameBoard = lazy(() => import('./GameBoard'))
 
 const pct = (v: number | null | undefined) => (v == null ? '—' : `${num(v, 0)}%`)
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n))
@@ -187,6 +191,7 @@ function Openings({ chess }: { chess: Chess }) {
 
 function History({ chess, onMore, loadingMore }: Props) {
   const { games, total_games: total } = chess
+  const [selected, setSelected] = useState<ChessGame | null>(null)
 
   return (
     <MagicCard color="var(--chess)">
@@ -197,9 +202,10 @@ function History({ chess, onMore, loadingMore }: Props) {
         </div>
         <ul className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-2">
           {games.map((g) => (
-            <GameRow key={g.uuid} game={g} />
+            <GameRow key={g.uuid} game={g} onOpen={() => setSelected(g)} />
           ))}
         </ul>
+        <p className="mt-3 text-xs text-muted">Click a game to replay it on a board.</p>
         {games.length < total && (
           <button
             type="button"
@@ -211,24 +217,33 @@ function History({ chess, onMore, loadingMore }: Props) {
           </button>
         )}
       </section>
+      {selected && (
+        <Suspense fallback={null}>
+          <GameBoard game={selected} onClose={() => setSelected(null)} />
+        </Suspense>
+      )}
     </MagicCard>
   )
 }
 
 const OUTCOME_COLOR = { win: 'var(--win)', loss: 'var(--loss)', draw: 'var(--ink-2)' }
 
-function GameRow({ game: g }: { game: ChessGame }) {
+function GameRow({ game: g, onOpen }: { game: ChessGame; onOpen: () => void }) {
+  const queryClient = useQueryClient()
   const ending = endingLabel(g)
+  // Start fetching the moves as soon as the pointer is over the row, so the board is ready when it's clicked
+  const prefetch = () => void queryClient.prefetchQuery(chessPgnQuery(g.uuid))
   const color = OUTCOME_COLOR[ending.outcome]
   const time = new Date(g.ended_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
   return (
     <li>
-      <a
-        href={g.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 rounded-xl border border-line bg-white/[0.025] py-2.5 pr-3 pl-3 transition-colors hover:border-white/15"
+      <button
+        type="button"
+        onClick={onOpen}
+        onPointerEnter={prefetch}
+        onFocus={prefetch}
+        className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-line bg-white/[0.025] py-2.5 pr-3 pl-3 text-left transition-colors hover:border-white/15"
         style={{ borderLeft: `3px solid ${color}` }}
       >
         <span
@@ -262,7 +277,7 @@ function GameRow({ game: g }: { game: ChessGame }) {
             {g.rating_change == null ? '—' : signed(g.rating_change)}
           </div>
         </div>
-      </a>
+      </button>
     </li>
   )
 }
