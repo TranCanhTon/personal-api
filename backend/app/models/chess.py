@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -27,3 +27,4 @@ class ChessGame(Base):
     abandoned: Mapped[bool] = mapped_column(Boolean, default=False)  # either side left the game
     opening: Mapped[str | None] = mapped_column(String(100))  # family, e.g. Scandinavian Defense
     eco: Mapped[str | None] = mapped_column(String(10))
+    pgn: Mapped[str | None] = mapped_column(Text)  # the whole game with its moves, read only when a game is opened

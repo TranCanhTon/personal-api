@@ -181,6 +181,11 @@ class ChessGameOut(BaseModel):
     eco: str | None = None
 
 
+class ChessPgn(BaseModel):
+    uuid: str
+    pgn: str  # the whole game with its moves, in PGN
+
+
 class ChessRecord(BaseModel):
     """Games that ended normally. Abandoned games are listed in the history but not counted here."""
 

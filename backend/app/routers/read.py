@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import schemas
 from app.config import settings
 from app.database import get_db
-from app.models import SyncLog
+from app.models import ChessGame, SyncLog
 from app.services import goals as goals_service
 from app.services import read, streaks
 
@@ -109,6 +109,15 @@ def get_chess(
 ):
     """chess.com: rating, record, colour and opening stats over every saved game, plus a page of games."""
     return read.chess_overview(db, time_class, limit, offset)
+
+
+@router.get("/games/chess/{uuid}", response_model=schemas.ChessPgn, tags=["hobby"])
+def get_chess_game(uuid: str, db: Session = Depends(get_db)):
+    """The moves of one game, for replaying it on a board. Kept apart from the list so the list stays small."""
+    game = db.get(ChessGame, uuid)
+    if game is None or not game.pgn:
+        raise HTTPException(404, "No moves saved for this game")
+    return schemas.ChessPgn(uuid=game.uuid, pgn=game.pgn)
 
 
 @router.get("/goals", response_model=schemas.GoalsIn, tags=["goals"])

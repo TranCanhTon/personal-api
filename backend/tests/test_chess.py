@@ -106,6 +106,19 @@ def test_first_sync_reads_every_month_then_only_the_latest_two(db):
     assert fake.fetched == urls[-2:]
 
 
+def test_games_saved_before_moves_were_kept_get_them_on_the_next_sync(db):
+    urls = [f"https://api.chess.com/pub/player/sooooo1/games/2026/0{m}" for m in range(1, 6)]
+    fake = FakeChess({u: [game(f"g{i}", 10 + i)] for i, u in enumerate(urls)})
+    sync_chess(db, fake, ME)
+    db.query(ChessGame).update({"pgn": None})  # as the table was before the moves were saved
+    db.commit()
+
+    fake.fetched.clear()
+    sync_chess(db, fake, ME)
+    assert len(fake.fetched) == 5  # every month again, not just the latest two
+    assert all(g.pgn for g in db.scalars(select(ChessGame)))
+
+
 def test_run_chess_sync_logs_status(db, monkeypatch):
     fake = FakeChess({"https://api.chess.com/pub/player/sooooo1/games/2026/09": [game("a", 20)]})
     monkeypatch.setattr(chess_sync, "ChessClient", lambda: fake)
@@ -177,3 +190,26 @@ def test_endpoint_filters_by_time_class_and_validates_it(client, db):
 def test_endpoint_with_no_games(client):
     data = client.get("/games/chess").json()
     assert data["summary"]["rating"] is None and data["games"] == [] and data["total_games"] == 0
+
+
+def test_game_row_keeps_the_moves():
+    assert "1. e4 d5" in game_row(game("g1", 20), ME)["pgn"]
+
+
+def test_one_games_moves_are_served_on_request(client, db):
+    seed(db)
+    data = client.get("/games/chess/a").json()
+    assert data["uuid"] == "a" and "1. e4 d5" in data["pgn"]
+    assert client.get("/games/chess/missing").status_code == 404
+
+
+def test_the_game_list_does_not_carry_the_moves(client, db):
+    seed(db)
+    assert "pgn" not in client.get("/games/chess").json()["games"][0]
+
+
+def test_a_game_without_saved_moves_is_not_found(client, db):
+    seed(db)
+    db.query(ChessGame).update({"pgn": None})
+    db.commit()
+    assert client.get("/games/chess/a").status_code == 404

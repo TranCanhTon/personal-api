@@ -77,13 +77,16 @@ def game_row(game: dict[str, Any], username: str) -> dict[str, Any] | None:
         "abandoned": "abandoned" in (me["result"], opp["result"]),
         "opening": opening_family(game.get("eco")),
         "eco": eco.group(1) if eco else None,
+        "pgn": game.get("pgn"),
     }
 
 
 def sync_chess(db: Session, client: _Client, username: str) -> int:
     """Saves games we don't have yet. Returns how many were added."""
     months = client.archives(username)
-    if db.scalar(select(func.count()).select_from(ChessGame)):
+    have = db.scalar(select(func.count()).select_from(ChessGame))
+    missing_moves = db.scalar(select(func.count()).select_from(ChessGame).where(ChessGame.pgn.is_(None)))
+    if have and not missing_moves:
         months = months[-RECENT_MONTHS:]  # already synced once, so only the months that can still change
     added = 0
     for url in months:
