@@ -1,6 +1,6 @@
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ORM(BaseModel):
@@ -124,6 +124,98 @@ class TradingSummary(BaseModel):
 class Trading(BaseModel):
     trades: list[TradeOut] = []
     summary: TradingSummary = TradingSummary()
+
+
+# ---------- goals and streaks ----------
+
+class GoalsIn(BaseModel):
+    """My targets. None switches a goal off."""
+
+    steps: int | None = Field(None, gt=0, le=100_000)
+    calories_in: float | None = Field(None, gt=0, le=10_000)
+    protein_g: float | None = Field(None, gt=0, le=1_000)
+    carbs_g: float | None = Field(None, gt=0, le=2_000)
+    fat_g: float | None = Field(None, gt=0, le=1_000)
+    sleep_hours: float | None = Field(None, gt=0, le=24)
+    workouts_per_week: int | None = Field(None, gt=0, le=21)
+
+
+class FoodStreak(BaseModel):
+    current: int  # consecutive days with food logged. Today doesn't break it until the day is over
+    best: int
+    logged_today: bool
+
+
+class GymStreak(BaseModel):
+    current: int  # consecutive weeks (Monday to Sunday) with enough workouts. This week doesn't break it until it's over
+    best: int
+    this_week: int  # workouts so far this week
+    target: int | None = None  # workouts per week, from the goals
+
+
+class Streaks(BaseModel):
+    food: FoodStreak
+    gym: GymStreak
+
+
+# ---------- chess ----------
+
+class ChessGameOut(BaseModel):
+    uuid: str
+    url: str
+    ended_at: dt.datetime
+    date: dt.date  # local day the game ended
+    time_class: str
+    time_control: str
+    rated: bool
+    color: str
+    rating: int  # mine, after the game
+    rating_change: int | None = None  # vs my rating after the previous game of this time class
+    opponent: str
+    opponent_rating: int | None = None
+    result: str  # mine, as chess.com words it: win, checkmated, resigned, timeout, ...
+    opponent_result: str
+    outcome: str  # win, loss or draw
+    abandoned: bool
+    opening: str | None = None
+    eco: str | None = None
+
+
+class ChessRecord(BaseModel):
+    """Games that ended normally. Abandoned games are listed in the history but not counted here."""
+
+    games: int = 0
+    wins: int = 0
+    losses: int = 0
+    draws: int = 0
+    win_rate: float | None = None  # percent, wins / games
+
+
+class ChessSummary(ChessRecord):
+    rating: int | None = None
+    best_rating: int | None = None
+    best_rating_date: dt.date | None = None
+    abandoned: int = 0
+
+
+class ChessOpening(ChessRecord):
+    opening: str
+
+
+class ChessRatingPoint(BaseModel):
+    ended_at: dt.datetime
+    rating: int
+
+
+class Chess(BaseModel):
+    time_class: str
+    summary: ChessSummary = ChessSummary()
+    white: ChessRecord = ChessRecord()
+    black: ChessRecord = ChessRecord()
+    openings: list[ChessOpening] = []  # most played first
+    rating_history: list[ChessRatingPoint] = []  # oldest first
+    total_games: int = 0  # every saved game of this time class, abandoned ones included
+    games: list[ChessGameOut] = []  # newest first, one page
 
 
 class Hobby(BaseModel):

@@ -9,7 +9,8 @@ from app import schemas
 from app.config import settings
 from app.database import get_db
 from app.models import SyncLog
-from app.services import read
+from app.services import goals as goals_service
+from app.services import read, streaks
 
 router = APIRouter(tags=["read"])
 
@@ -96,6 +97,33 @@ def get_trades(
     return schemas.Trading(
         trades=[schemas.TradeOut.model_validate(t) for t in trades],
         summary=read.summarize_trades(trades),
+    )
+
+
+@router.get("/games/chess", response_model=schemas.Chess, tags=["hobby"])
+def get_chess(
+    time_class: str = Query("rapid", pattern="^(rapid|blitz|bullet|daily)$", description="Which kind of game"),
+    limit: int = Query(20, ge=1, le=200, description="Games per page"),
+    offset: int = Query(0, ge=0, description="Games to skip, newest first"),
+    db: Session = Depends(get_db),
+):
+    """chess.com: rating, record, colour and opening stats over every saved game, plus a page of games."""
+    return read.chess_overview(db, time_class, limit, offset)
+
+
+@router.get("/goals", response_model=schemas.GoalsIn, tags=["goals"])
+def get_goals(db: Session = Depends(get_db)):
+    """My targets (steps, calories, macros, sleep, workouts per week). Defaults until first saved."""
+    return goals_service.get_goals(db)
+
+
+@router.get("/streaks", response_model=schemas.Streaks, tags=["goals"])
+def get_streaks(db: Session = Depends(get_db)):
+    """Food logging streak in days and gym streak in weeks, as of today."""
+    goals = goals_service.get_goals(db)
+    return schemas.Streaks(
+        food=streaks.food_streak(db, today()),
+        gym=streaks.gym_streak(db, today(), goals.workouts_per_week),
     )
 
 

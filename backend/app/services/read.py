@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app import schemas
 from app.config import settings
-from app.models import DailyFitness, HeartRateDaily, HeartRateSample, Sleep, Todo, Trade, Workout
+from app.models import ChessGame, DailyFitness, HeartRateDaily, HeartRateSample, Sleep, Todo, Trade, Workout
 
 
 def date_range(start: date, end: date) -> list[date]:
@@ -222,3 +222,66 @@ def build_days(db: Session, start: date, end: date) -> list[schemas.Day]:
         )
         for day in date_range(start, end)
     ]
+
+
+def _chess_record(games: list[ChessGame]) -> schemas.ChessRecord:
+    """Record over games that ended normally."""
+    counted = [g for g in games if not g.abandoned]
+    wins = sum(g.outcome == "win" for g in counted)
+    return schemas.ChessRecord(
+        games=len(counted),
+        wins=wins,
+        losses=sum(g.outcome == "loss" for g in counted),
+        draws=sum(g.outcome == "draw" for g in counted),
+        win_rate=round(wins / len(counted) * 100, 1) if counted else None,
+    )
+
+
+def chess_overview(db: Session, time_class: str, limit: int, offset: int) -> schemas.Chess:
+    """Rating, record, colour and opening stats over every saved game of a time class, plus one page of games."""
+    tz = ZoneInfo(settings.timezone)
+    games = list(db.scalars(select(ChessGame).where(ChessGame.time_class == time_class).order_by(ChessGame.ended_at)))
+    if not games:
+        return schemas.Chess(time_class=time_class)
+
+    best = max(games, key=lambda g: (g.rating, g.ended_at))
+    summary = schemas.ChessSummary(
+        **_chess_record(games).model_dump(),
+        rating=games[-1].rating,
+        best_rating=best.rating,
+        best_rating_date=best.ended_at.astimezone(tz).date(),
+        abandoned=sum(g.abandoned for g in games),
+    )
+
+    by_opening: dict[str, list[ChessGame]] = defaultdict(list)
+    for g in games:
+        if not g.abandoned:
+            by_opening[g.opening or "Unknown"].append(g)
+    openings = sorted(
+        (schemas.ChessOpening(opening=name, **_chess_record(items).model_dump()) for name, items in by_opening.items()),
+        key=lambda o: (-o.games, o.opening),
+    )[:8]
+
+    previous = {games[i].uuid: games[i - 1].rating for i in range(1, len(games))}
+    page = sorted(games, key=lambda g: g.ended_at, reverse=True)[offset : offset + limit]
+    return schemas.Chess(
+        time_class=time_class,
+        summary=summary,
+        white=_chess_record([g for g in games if g.color == "white"]),
+        black=_chess_record([g for g in games if g.color == "black"]),
+        openings=openings,
+        rating_history=[schemas.ChessRatingPoint(ended_at=g.ended_at.astimezone(tz), rating=g.rating) for g in games],
+        total_games=len(games),
+        games=[
+            schemas.ChessGameOut(
+                date=g.ended_at.astimezone(tz).date(),
+                ended_at=g.ended_at.astimezone(tz),
+                rating_change=g.rating - previous[g.uuid] if g.uuid in previous else None,
+                **{c: getattr(g, c) for c in (
+                    "uuid", "url", "time_class", "time_control", "rated", "color", "rating", "opponent",
+                    "opponent_rating", "result", "opponent_result", "outcome", "abandoned", "opening", "eco",
+                )},
+            )
+            for g in page
+        ],
+    )
