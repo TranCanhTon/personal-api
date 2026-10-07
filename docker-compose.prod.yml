@@ -15,6 +15,7 @@ services:
   web:
     image: nginx:1.27-alpine
     restart: unless-stopped
+    logging: *cloudwatch
     # Same port the API used to have, so the HTTPS proxy on the server needs no change
     ports:
       - "127.0.0.1:8000:80"
