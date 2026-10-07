@@ -1,6 +1,17 @@
 # Production only. Used by Ansible together with docker-compose.yml.
+x-logging: &cloudwatch
+  driver: awslogs
+  options:
+    awslogs-group: personal-api
+    awslogs-region: YOUR-REGION
+    tag: "{{.Name}}"
+
 services:
-  # The API is no longer published on the host. web passes requests to it.
+  db:
+    logging: *cloudwatch
+
+  backend:
+    logging: *cloudwatch
   web:
     image: nginx:1.27-alpine
     restart: unless-stopped
