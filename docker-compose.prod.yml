@@ -3,7 +3,7 @@ x-logging: &cloudwatch
   driver: awslogs
   options:
     awslogs-group: personal-api
-    awslogs-region: YOUR-REGION
+    awslogs-region: us-west-1
     tag: "{{.Name}}"
 
 services:
