@@ -54,7 +54,7 @@ export async function putGoals(goals: GoalsApi, apiKey: string): Promise<GoalsAp
   return res.json() as Promise<GoalsApi>
 }
 
-/** Food logging streak (days) and gym streak (weeks), as of today. */
+/** Gym streak (weeks with enough workouts in a row), as of today. */
 export function useStreaks() {
   return useQuery({
     queryKey: ['streaks'],

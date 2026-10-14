@@ -214,7 +214,7 @@ export interface paths {
         };
         /**
          * Get Streaks
-         * @description Food logging streak in days and gym streak in weeks, as of today.
+         * @description Gym streak in weeks (Monday to Sunday with enough workouts), as of today.
          */
         get: operations["get_streaks_streaks_get"];
         put?: never;
@@ -622,15 +622,6 @@ export interface components {
              */
             date: string;
         };
-        /** FoodStreak */
-        FoodStreak: {
-            /** Current */
-            current: number;
-            /** Best */
-            best: number;
-            /** Logged Today */
-            logged_today: boolean;
-        };
         /**
          * GoalsIn
          * @description My targets. None switches a goal off.
@@ -773,7 +764,6 @@ export interface components {
         };
         /** Streaks */
         Streaks: {
-            food: components["schemas"]["FoodStreak"];
             gym: components["schemas"]["GymStreak"];
         };
         /** SyncStatus */

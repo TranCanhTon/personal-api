@@ -3,12 +3,12 @@ import { useState } from 'react'
 import { useChess, useDays } from './api/client'
 import { Backdrop } from './components/Backdrop'
 import { GoalsPanel } from './components/GoalsPanel'
+import { GymStreak } from './components/GymStreak'
 import { PeriodBar } from './components/PeriodBar'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { ChessView, PAGE_SIZE } from './features/chess/ChessView'
 import { FitnessDay } from './features/fitness/FitnessDay'
 import { FitnessRange } from './features/fitness/FitnessRange'
-import { Streaks } from './features/fitness/Streaks'
 import { SleepDay } from './features/sleep/SleepDay'
 import { SleepRange } from './features/sleep/SleepRange'
 import { addDays, todayISO, VIEW_DAYS, windowFor, type View } from './lib/dates'
@@ -73,7 +73,10 @@ export default function App() {
               Dashboard
             </motion.span>
           </h1>
-          <GoalsPanel />
+          <div className="flex items-center gap-2">
+            <GymStreak />
+            <GoalsPanel />
+          </div>
         </header>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mt-6">
@@ -122,10 +125,11 @@ export default function App() {
             // Re-keyed per tab and view, so the cards rise in again one after another
             <motion.div key={`${tab}-${view}`} variants={stagger} initial="hidden" animate="show">
               {tab === 'fitness' ? (
-                <>
-                  <Streaks />
-                  {view === 'day' ? <FitnessDay day={days[days.length - 1]} /> : <FitnessRange days={days} />}
-                </>
+                view === 'day' ? (
+                  <FitnessDay day={days[days.length - 1]} />
+                ) : (
+                  <FitnessRange days={days} />
+                )
               ) : view === 'day' ? (
                 <SleepDay day={days[days.length - 1]} />
               ) : (
