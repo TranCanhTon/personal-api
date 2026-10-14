@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import schemas
-from app.models import DailyFitness, Workout
+from app.models import Workout
 
 
 def _runs(sorted_units: list[int]) -> list[tuple[int, int]]:
@@ -31,15 +31,6 @@ def _current_and_best(units: set[int], now: int) -> tuple[int, int]:
     last = last_start + last_length - 1
     current = last_length if last >= now - 1 else 0
     return current, best
-
-
-def food_streak(db: Session, today: date) -> schemas.FoodStreak:
-    """Consecutive days with food logged (any calories saved for the day). Today may not be logged yet."""
-    days = set(
-        db.scalars(select(DailyFitness.date).where(DailyFitness.calories_in.is_not(None), DailyFitness.calories_in > 0))
-    )
-    current, best = _current_and_best({d.toordinal() for d in days}, today.toordinal())
-    return schemas.FoodStreak(current=current, best=best, logged_today=today in days)
 
 
 def _week_number(day: date) -> int:

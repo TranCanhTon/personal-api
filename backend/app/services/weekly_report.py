@@ -76,7 +76,7 @@ def build_report(db: Session, today: date) -> tuple[str, str]:
     goals = get_goals(db)
     start = today - timedelta(days=today.weekday())
     this, last = week_stats(db, start, goals), week_stats(db, start - timedelta(days=7), goals)
-    food, gym = streaks.food_streak(db, today), streaks.gym_streak(db, today, goals.workouts_per_week)
+    gym = streaks.gym_streak(db, today, goals.workouts_per_week)
 
     lines = [
         f"Week of {start.isoformat()} to {(start + timedelta(days=6)).isoformat()}",
@@ -107,14 +107,15 @@ def build_report(db: Session, today: date) -> tuple[str, str]:
         + _delta(this.avg_sleep_h, last.avg_sleep_h, " h", 1)
         + f"  [{this.nights} nights]",
         "",
-        "STREAKS",
-        f"Food logging: {food.current} {'day' if food.current == 1 else 'days'} (best {food.best})",
+        "STREAK",
     ]
     if gym.target:
         lines.append(
             f"Gym ({gym.target} a week): {gym.current} {'week' if gym.current == 1 else 'weeks'} in a row (best {gym.best}), "
             f"{gym.this_week} so far this week"
         )
+    else:
+        lines.append("No workouts-per-week goal set")
     return f"Weekly report: {start.strftime('%d %b')}", "\n".join(lines) + "\n"
 
 

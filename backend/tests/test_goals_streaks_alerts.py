@@ -53,36 +53,6 @@ def test_goals_are_validated(client):
 
 # ---------- streaks ----------
 
-def test_food_streak_counts_consecutive_days_and_today_is_not_required_yet(db):
-    add_food(db, TODAY - timedelta(days=3), TODAY - timedelta(days=2), TODAY - timedelta(days=1))
-    s = streaks.food_streak(db, TODAY)
-    assert (s.current, s.best, s.logged_today) == (3, 3, False)
-
-
-def test_food_streak_includes_today_when_logged(db):
-    add_food(db, TODAY - timedelta(days=1), TODAY)
-    s = streaks.food_streak(db, TODAY)
-    assert s.current == 2 and s.logged_today is True
-
-
-def test_food_streak_breaks_after_a_missed_day_but_keeps_the_best(db):
-    add_food(db, *(TODAY - timedelta(days=n) for n in range(10, 4, -1)))  # 6 days, then a gap
-    add_food(db, TODAY - timedelta(days=1))
-    s = streaks.food_streak(db, TODAY)
-    assert (s.current, s.best) == (1, 6)
-
-
-def test_food_streak_is_zero_when_yesterday_was_missed(db):
-    add_food(db, TODAY - timedelta(days=2))
-    assert streaks.food_streak(db, TODAY).current == 0
-
-
-def test_days_without_calories_do_not_count_as_logged(db):
-    db.add(DailyFitness(date=TODAY - timedelta(days=1), steps=9000))  # steps only
-    db.commit()
-    assert streaks.food_streak(db, TODAY).current == 0
-
-
 def test_gym_streak_counts_weeks_with_enough_workouts(db):
     for weeks_ago in (1, 2, 3):
         add_workouts(db, *(monday(weeks_ago) + timedelta(days=n) for n in (0, 1, 3, 5)))  # 4 a week
@@ -112,11 +82,10 @@ def test_gym_streak_has_no_target_when_the_goal_is_off(db):
     assert streaks.gym_streak(db, TODAY, None).target is None
 
 
-def test_streaks_endpoint(client, db):
-    add_food(db, date.today())
+def test_streaks_endpoint_has_only_the_gym_streak(client, db):
     data = client.get("/streaks").json()
-    assert data["food"]["logged_today"] is True
-    assert data["gym"]["target"] == 4
+    assert list(data) == ["gym"]
+    assert data["gym"] == {"current": 0, "best": 0, "this_week": 0, "target": 4}
 
 
 # ---------- food suggestion ----------
@@ -281,7 +250,7 @@ def test_weekly_report_summarises_the_week_against_the_week_before(db, outbox):
     assert "Days logged: 2 of 7" in body
     assert "Calories per logged day: 2,400 kcal  (+400 kcal vs last week)" in body
     assert "Time asleep per night: 7.5 h" in body
-    assert "Food logging:" in body and "Gym (4 a week)" in body
+    assert "Food logging" not in body and "Gym (4 a week)" in body
 
 
 def test_weekly_report_copes_with_an_empty_week(db):

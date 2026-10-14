@@ -140,12 +140,6 @@ class GoalsIn(BaseModel):
     workouts_per_week: int | None = Field(None, gt=0, le=21)
 
 
-class FoodStreak(BaseModel):
-    current: int  # consecutive days with food logged. Today doesn't break it until the day is over
-    best: int
-    logged_today: bool
-
-
 class GymStreak(BaseModel):
     current: int  # consecutive weeks (Monday to Sunday) with enough workouts. This week doesn't break it until it's over
     best: int
@@ -154,7 +148,6 @@ class GymStreak(BaseModel):
 
 
 class Streaks(BaseModel):
-    food: FoodStreak
     gym: GymStreak
 
 

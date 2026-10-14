@@ -128,12 +128,9 @@ def get_goals(db: Session = Depends(get_db)):
 
 @router.get("/streaks", response_model=schemas.Streaks, tags=["goals"])
 def get_streaks(db: Session = Depends(get_db)):
-    """Food logging streak in days and gym streak in weeks, as of today."""
+    """Gym streak in weeks (Monday to Sunday with enough workouts), as of today."""
     goals = goals_service.get_goals(db)
-    return schemas.Streaks(
-        food=streaks.food_streak(db, today()),
-        gym=streaks.gym_streak(db, today(), goals.workouts_per_week),
-    )
+    return schemas.Streaks(gym=streaks.gym_streak(db, today(), goals.workouts_per_week))
 
 
 @router.get("/sync/status", response_model=list[schemas.SyncStatus], tags=["system"])
